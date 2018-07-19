@@ -38,7 +38,7 @@ def get_data(predicate, df):
     return X, y
 
 
-def do_active_learning(X, y, X_test, y_test, n_queries):
+def do_active_learning(X, y, X_test, y_test, n_queries, n_instances):
     # initial training data
     pos_idx_all = (y == 1).nonzero()[0]
     neg_idx_all = (y == 0).nonzero()[0]
@@ -64,10 +64,10 @@ def do_active_learning(X, y, X_test, y_test, n_queries):
 
     # pool-based sampling
     for idx in range(n_queries):
-        query_idx, query_instance = learner.query(X_pool, n_instances=1)
+        query_idx, _ = learner.query(X_pool, n_instances=n_instances)
         learner.teach(
-            X=X_pool[query_idx].reshape(1, -1),
-            y=y_pool[query_idx].reshape(1, )
+            X=X_pool[query_idx].reshape(n_instances, -1),
+            y=y_pool[query_idx].reshape(n_instances, )
         )
         # remove queried instance from pool
         X_pool = np.delete(X_pool, query_idx, axis=0)
@@ -81,7 +81,8 @@ def do_active_learning(X, y, X_test, y_test, n_queries):
 if __name__ == '__main__':
     df = pd.read_csv('./data/ohsumed_C14_C23_1grams.csv')
     predicate = 'C14'
-    n_queries = 300
+    n_queries = 100
+    n_instances = 10  # num of instances for labeling for 1 query
 
     # load data
     X_, y_ = get_data(predicate, df)
@@ -95,5 +96,5 @@ if __name__ == '__main__':
         X, X_test = X_[train_index], X_[test_index]
         y, y_test = y_[train_index], y_[test_index]
 
-        do_active_learning(X, y, X_test, y_test, n_queries)
+        do_active_learning(X, y, X_test, y_test, n_queries, n_instances)
         print('-----------------')
