@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.svm import LinearSVC
 from sklearn.feature_extraction.text import CountVectorizer, \
                                             TfidfTransformer, \
@@ -11,6 +11,7 @@ from sklearn.linear_model import LogisticRegression
 from modAL.uncertainty import uncertainty_sampling
 
 seed = 123
+# np.random.seed(seed)
 
 
 # class LinearSVC_proba(LinearSVC):
@@ -37,9 +38,15 @@ def get_data(predicate, df):
     return X, y
 
 
-def do_active_learning(X, y , X_test, y_test, n_queries):
+def do_active_learning(X, y, X_test, y_test, n_queries):
     # initial training data
-    train_idx = [1, 2, 3, -1, -2, -3]
+    pos_idx_all = (y == 1).nonzero()[0]
+    neg_idx_all = (y == 0).nonzero()[0]
+
+    # randomly select initial balanced training dataset
+    init_train_size = 10
+    train_idx = np.concatenate([np.random.choice(pos_idx_all, init_train_size//2, replace=False),
+                                np.random.choice(neg_idx_all, init_train_size // 2, replace=False)])
     X_train = X[train_idx]
     y_train = y[train_idx]
 
@@ -53,7 +60,7 @@ def do_active_learning(X, y , X_test, y_test, n_queries):
         X_training=X_train, y_training=y_train,
         query_strategy=uncertainty_sampling
     )
-    # print('Accuracy before active learning: %f' % learner.score(X_, y_))
+    print('Accuracy before active learning: %f' % learner.score(X_test, y_test))
 
     # pool-based sampling
     for idx in range(n_queries):
@@ -65,17 +72,25 @@ def do_active_learning(X, y , X_test, y_test, n_queries):
         # remove queried instance from pool
         X_pool = np.delete(X_pool, query_idx, axis=0)
         y_pool = np.delete(y_pool, query_idx)
-        print('Accuracy after query no. %d: %f' % (idx + 1, learner.score(X_, y_)))
+        print('Accuracy after query no. %d: %f' % (idx + 1, learner.score(X_test, y_test)))
 
 
 if __name__ == '__main__':
     df = pd.read_csv('./data/ohsumed_C14_C23_1grams.csv')
     predicate = 'C14'
-    n_queries = 200
+    n_queries = 30
 
     # load data
     X_, y_ = get_data(predicate, df)
     vectorizer = TfidfVectorizer(lowercase=False, max_features=1000, ngram_range=(1, 1))
     X_ = vectorizer.fit_transform(X_).toarray()
 
-    do_active_learning(X_, y_, None, None, n_queries)
+    k = 10
+    skf = StratifiedKFold(n_splits=k, random_state=seed)
+    pre, rec, f1 = [], [], []
+    for train_index, test_index in skf.split(X_, y_):
+        X, X_test = X_[train_index], X_[test_index]
+        y, y_test = y_[train_index], y_[test_index]
+
+        do_active_learning(X, y, X_test, y_test, n_queries)
+        print('-----------------')
