@@ -29,8 +29,7 @@ seed = 123
 def get_data(predicate, df):
     X_pos = df.loc[df[predicate] == 1]['tokens'].values
     pos_num = len(X_pos)
-#     X_neg = df.loc[df[predicate] == 0]['tokens'].values[:pos_num] # balanced data
-    X_neg = df.loc[df[predicate] == 0]['tokens'].values  # imbalanced data
+    X_neg = df.loc[df[predicate] == 0]['tokens'].values
     neg_num = len(X_neg)
     X = np.append(X_pos, X_neg)
     y = np.append(np.ones(pos_num), np.zeros(neg_num))
@@ -57,7 +56,7 @@ def do_active_learning(X, y, X_test, y_test, n_queries, n_instances):
 
     # initializing the active learner
     learner = ActiveLearner(
-        estimator=LogisticRegression(),
+        estimator=LogisticRegression(class_weight='balanced', random_state=seed),
         X_training=X_train, y_training=y_train,
         query_strategy=uncertainty_sampling
     )
@@ -66,8 +65,8 @@ def do_active_learning(X, y, X_test, y_test, n_queries, n_instances):
     for idx in range(n_queries):
         query_idx, _ = learner.query(X_pool, n_instances=n_instances)
         learner.teach(
-            X=X_pool[query_idx].reshape(n_instances, -1),
-            y=y_pool[query_idx].reshape(n_instances, )
+            X=X_pool[query_idx],
+            y=y_pool[query_idx]
         )
         # remove queried instance from pool
         X_pool = np.delete(X_pool, query_idx, axis=0)
@@ -81,8 +80,8 @@ def do_active_learning(X, y, X_test, y_test, n_queries, n_instances):
 if __name__ == '__main__':
     df = pd.read_csv('./data/ohsumed_C14_C23_1grams.csv')
     predicate = 'C14'
-    n_queries = 100
-    n_instances = 10  # num of instances for labeling for 1 query
+    n_queries = 5000
+    n_instances = 50  # num of instances for labeling for 1 query
 
     # load data
     X_, y_ = get_data(predicate, df)
