@@ -36,6 +36,28 @@ class Learner:
             query_strategy=self.sampling_strategy
         )
 
+    def undersample(self, query_idx):
+        pos_y_num = sum(self.learner.y_training)
+        train_y_num = len(self.learner.y_training)
+
+        pos_y_idx = (self.y_pool[query_idx] == 1).nonzero()[0]  # add all positive items from queried items
+        query_idx_new = list(query_idx[pos_y_idx])                         # delete positive idx from queried query_idx
+        query_neg_idx = np.delete(query_idx, pos_y_idx)
+
+        pos_y_num += len(pos_y_idx)
+        train_y_num += len(pos_y_idx)
+        for y_neg_idx in query_neg_idx:
+            # compute current proportion of positive items in training dataset
+            if pos_y_num / train_y_num > self.undersampling_thr:
+                query_idx_new.append(y_neg_idx)
+                train_y_num += 1
+            else:
+                # print('pos_num: {}, neg_num: {}'.format(len(pos_y_idx), len(query_idx_new)-len(pos_y_idx)))
+                return query_idx_new
+
+        # print('pos_num: {}, neg_num: {}'.format(len(pos_y_idx), len(query_idx_new) - len(pos_y_idx)))
+        return query_idx_new
+
     def run(self, X, y, X_test, y_test):
         self.X_test, self.y_test = X_test, y_test
         self.initialize_active_learner(X, y)
@@ -43,11 +65,11 @@ class Learner:
         # pool-based sampling
         for idx in range(self.n_queries):
             query_idx, _ = self.learner.query(self.X_pool, n_instances=self.n_instances_query)
+            query_idx_new = self.undersample(query_idx)   # undersample the majority class
 
-            # prop_of_positives = sum(learner.y_training) / len(learner.y_training)
             self.learner.teach(
-                X=self.X_pool[query_idx],
-                y=self.y_pool[query_idx]
+                X=self.X_pool[query_idx_new],
+                y=self.y_pool[query_idx_new]
             )
             # remove queried instance from pool
             self.X_pool = np.delete(self.X_pool, query_idx, axis=0)

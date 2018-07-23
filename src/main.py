@@ -29,8 +29,8 @@ if __name__ == '__main__':
         params = {
             'clf': LogisticRegression(class_weight='balanced', random_state=seed),
             'n_queries': 500,
-            'n_instances_query': 50,  # num of instances for labeling for 1 query
-            'undersampling_thr': 0.33,
+            'n_instances_query': 10,   # num of instances for labeling for 1 query
+            'undersampling_thr': 0.333,
             'seed': seed,
             'init_train_size': 10,
             'sampling_strategy': uncertainty_sampling
