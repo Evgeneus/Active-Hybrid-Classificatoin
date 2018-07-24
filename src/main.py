@@ -1,8 +1,8 @@
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 from sklearn.feature_extraction.text import TfidfVectorizer
-
-from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
+from sklearn.calibration import CalibratedClassifierCV
 from modAL.uncertainty import uncertainty_sampling
 
 from src.utils import load_data
@@ -27,8 +27,8 @@ if __name__ == '__main__':
         y, y_test = y_[train_index], y_[test_index]
 
         params = {
-            'clf': LogisticRegression(class_weight='balanced', random_state=seed),
-            'n_queries': 40,
+            'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced', random_state=seed)),
+            'n_queries': 50,
             'n_instances_query': 50,   # num of instances for labeling for 1 query
             'undersampling_thr': 0.333,
             'seed': seed,
