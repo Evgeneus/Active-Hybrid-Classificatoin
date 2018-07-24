@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from sklearn.metrics import precision_recall_fscore_support
 from modAL.models import ActiveLearner
 
@@ -52,19 +53,25 @@ class Learner:
                 query_idx_new.append(y_neg_idx)
                 train_y_num += 1
             else:
-                # print('pos_num: {}, neg_num: {}'.format(len(pos_y_idx), len(query_idx_new)-len(pos_y_idx)))
                 return query_idx_new
 
-        # print('pos_num: {}, neg_num: {}'.format(len(pos_y_idx), len(query_idx_new) - len(pos_y_idx)))
         return query_idx_new
 
     def run(self, X, y, X_test, y_test):
         self.X_test, self.y_test = X_test, y_test
         self.initialize_active_learner(X, y)
 
+        # estimate initial metrics
+        pre_, rec_, f1_, _ = precision_recall_fscore_support(self.y_test, self.learner.predict(X_test),
+                                                             average='binary')
+        num_items_queried = self.init_train_size
+        proportion_positives = sum(self.learner.y_training) / len(self.learner.y_training)
+        data = [[num_items_queried, self.init_train_size, proportion_positives,
+                 pre_, rec_, f1_]]  # [num_items_queried, training_size, precision, recall, f1]
         # pool-based sampling
         for idx in range(self.n_queries):
             query_idx, _ = self.learner.query(self.X_pool, n_instances=self.n_instances_query)
+            num_items_queried += self.n_instances_query
             query_idx_new = self.undersample(query_idx)   # undersample the majority class
 
             self.learner.teach(
@@ -75,6 +82,20 @@ class Learner:
             self.X_pool = np.delete(self.X_pool, query_idx, axis=0)
             self.y_pool = np.delete(self.y_pool, query_idx)
 
-            pre_, rec_, f1_, _ = precision_recall_fscore_support(self.y_test, self.learner.predict(X_test), average='binary')
+            pre_, rec_, f1_, _ = precision_recall_fscore_support(self.y_test,
+                                                                 self.learner.predict(X_test),
+                                                                 average='binary')
+            proportion_positives = sum(self.learner.y_training) / len(self.learner.y_training)
+            data.append([num_items_queried, len(self.learner.y_training),
+                         proportion_positives, pre_, rec_, f1_])
+
             print('F1 after query no. %d: %f' % (idx + 1, f1_), end='  ')
-            print('prop of + {:1.3f}'.format(sum(self.learner.y_training) / len(self.learner.y_training)))
+            print('prop of + {:1.3f}'.format(proportion_positives))
+
+        print('-----------------')
+        return pd.DataFrame(data, columns=['num_items_queried',
+                                           'training_size',
+                                           'proportion_positives',
+                                           'precision',
+                                           'recall',
+                                           'f1'])
