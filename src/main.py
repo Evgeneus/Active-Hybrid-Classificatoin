@@ -62,4 +62,6 @@ if __name__ == '__main__':
     df_to_print['precision_std'] = df_std['precision']
     df_to_print['recall_std'] = df_std['recall']
     df_to_print['f1_std'] = df_std['f1']
+
+    df_to_print['sampling_strategy'] = params['sampling_strategy'].__name__
     df_to_print.to_csv('../data/single_classifier_al/al_{}.csv'.format(predicate), index=False)
