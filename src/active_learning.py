@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import precision_recall_fscore_support
 from modAL.models import ActiveLearner
+from src.utils import precision_recall_fbeta_loss
 
 
 class Learner:
@@ -14,6 +15,8 @@ class Learner:
         self.seed = params['seed']
         self.init_train_size = params['init_train_size']
         self.sampling_strategy = params['sampling_strategy']
+        self.p_out = params['p_out']
+        self.lr = params['lr']
 
     def initialize_active_learner(self, X, y):
         # initial training data
@@ -62,12 +65,13 @@ class Learner:
         self.initialize_active_learner(X, y)
 
         # estimate initial metrics
-        pre_, rec_, f1_, _ = precision_recall_fscore_support(self.y_test, self.learner.predict(X_test),
-                                                             average='binary')
+        pre_, rec_, fbeta_, loss_ = precision_recall_fbeta_loss(self.y_test,
+                                                         self.learner.predict(X_test),
+                                                         self.p_out, self.lr)
         num_items_queried = self.init_train_size
         proportion_positives = sum(self.learner.y_training) / len(self.learner.y_training)
         data = [[num_items_queried, self.init_train_size, proportion_positives,
-                 pre_, rec_, f1_]]  # [num_items_queried, training_size, precision, recall, f1]
+                 pre_, rec_, fbeta_, loss_]]  # [num_items_queried, training_size, precision, recall, f1]
         # pool-based sampling
         for idx in range(self.n_queries):
             query_idx, _ = self.learner.query(self.X_pool, n_instances=self.n_instances_query)
@@ -82,14 +86,14 @@ class Learner:
             self.X_pool = np.delete(self.X_pool, query_idx, axis=0)
             self.y_pool = np.delete(self.y_pool, query_idx)
 
-            pre_, rec_, f1_, _ = precision_recall_fscore_support(self.y_test,
-                                                                 self.learner.predict(X_test),
-                                                                 average='binary')
+            pre_, rec_, fbeta_, loss_ = precision_recall_fbeta_loss(self.y_test,
+                                                                    self.learner.predict(X_test),
+                                                                    self.p_out, self.lr)
             proportion_positives = sum(self.learner.y_training) / len(self.learner.y_training)
             data.append([num_items_queried, len(self.learner.y_training),
-                         proportion_positives, pre_, rec_, f1_])
+                         proportion_positives, pre_, rec_, fbeta_, loss_])
 
-            print('F1 after query no. %d: %f' % (idx + 1, f1_), end='  ')
+            print('F1 after query no. %d: %f' % (idx + 1, fbeta_), end='  ')
             print('prop of + {:1.3f}'.format(proportion_positives))
 
         print('-----------------')
@@ -98,4 +102,4 @@ class Learner:
                                            'proportion_positives',
                                            'precision',
                                            'recall',
-                                           'f1'])
+                                           'fbeta', 'loss'])
