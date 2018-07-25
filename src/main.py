@@ -28,13 +28,13 @@ if __name__ == '__main__':
 
         params = {
             'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced', random_state=seed)),
-            'n_queries': 4,
+            'n_queries': 50,
             'n_instances_query': 50,   # num of instances for labeling for 1 query
             'undersampling_thr': 0.333,
             'seed': seed,
             'init_train_size': 10,
             'sampling_strategy': uncertainty_sampling,
-            'p_out': 0.99,
+            'p_out': 0.5,
             'lr': 10
         }
 
@@ -68,4 +68,4 @@ if __name__ == '__main__':
     df_to_print['loss_std'] = df_std['loss']
 
     df_to_print['sampling_strategy'] = params['sampling_strategy'].__name__
-    df_to_print.to_csv('../data/single_classifier_al/al_{}11111.csv'.format(predicate), index=False)
+    df_to_print.to_csv('../data/single_classifier_al/screening_al_{}.csv'.format(predicate), index=False)

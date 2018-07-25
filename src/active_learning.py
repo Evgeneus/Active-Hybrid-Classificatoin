@@ -1,11 +1,10 @@
 import numpy as np
 import pandas as pd
-from sklearn.metrics import precision_recall_fscore_support
 from modAL.models import ActiveLearner
-from src.utils import precision_recall_fbeta_loss
+from src.utils import MetricsMixin
 
 
-class Learner:
+class Learner(MetricsMixin):
 
     def __init__(self, params):
         self.clf = params['clf']
@@ -65,9 +64,9 @@ class Learner:
         self.initialize_active_learner(X, y)
 
         # estimate initial metrics
-        pre_, rec_, fbeta_, loss_ = precision_recall_fbeta_loss(self.y_test,
-                                                         self.learner.predict(X_test),
-                                                         self.p_out, self.lr)
+        pre_, rec_, fbeta_, loss_ = self.compute_screening_metrics(self.y_test,
+                                                                   self.learner.predict_proba(X_test),
+                                                                   self.p_out, self.lr)
         num_items_queried = self.init_train_size
         proportion_positives = sum(self.learner.y_training) / len(self.learner.y_training)
         data = [[num_items_queried, self.init_train_size, proportion_positives,
@@ -86,14 +85,16 @@ class Learner:
             self.X_pool = np.delete(self.X_pool, query_idx, axis=0)
             self.y_pool = np.delete(self.y_pool, query_idx)
 
-            pre_, rec_, fbeta_, loss_ = precision_recall_fbeta_loss(self.y_test,
-                                                                    self.learner.predict(X_test),
-                                                                    self.p_out, self.lr)
+            pre_, rec_, fbeta_, loss_ = self.compute_screening_metrics(self.y_test,
+                                                                       self.learner.predict_proba(X_test),
+                                                                       self.p_out, self.lr)
             proportion_positives = sum(self.learner.y_training) / len(self.learner.y_training)
             data.append([num_items_queried, len(self.learner.y_training),
                          proportion_positives, pre_, rec_, fbeta_, loss_])
 
-            print('F1 after query no. %d: %f' % (idx + 1, fbeta_), end='  ')
+            print('query no. {}: loss: {:1.3f}, fbeta: {:1.3f},'
+                  'recall: {:1.3f}, precisoin: {:1.3f}'
+                  .format(idx + 1, loss_, fbeta_, rec_, pre_), end='  ')
             print('prop of + {:1.3f}'.format(proportion_positives))
 
         print('-----------------')
