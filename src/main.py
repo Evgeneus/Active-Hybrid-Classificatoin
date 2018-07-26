@@ -5,7 +5,7 @@ from sklearn.calibration import CalibratedClassifierCV
 from modAL.uncertainty import uncertainty_sampling
 
 from src.utils import load_vectorize_data
-from src.active_learning import Learner
+from src.active_learning import Learner, ScreeningActiveLearner
 
 seed = 123
 
@@ -47,8 +47,13 @@ if __name__ == '__main__':
             learner.setup_active_learner(X_train, y_predicate_train[pr], X_test, y_predicate_test[pr])
             learners[pr] = learner
 
-
-    # SAL = ScreeningActiveLearner()
+        params['learners'] = learners
+        SAL = ScreeningActiveLearner(params)
+        n_instances_query = 50
+        for i in range(n_instances_query):
+            pr = SAL.select_predicate(i)
+            query_idx = SAL.query(pr)
+            SAL.teach(pr, query_idx)
 
 
         # # start active learning

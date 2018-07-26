@@ -107,17 +107,34 @@ class Learner(MetricsMixin):
     #                                        'recall',
     #                                        'fbeta', 'loss'])
 
-#
-# class ScreeningActiveLearner:
-#
-#     def __init__(self, params):
-#         self.clf = params['clf']
-#         self.n_queries = params['n_queries']
-#         self.n_instances_query = params['n_instances_query']
-#         self.undersampling_thr = params['undersampling_thr']
-#         self.seed = params['seed']
-#         self.init_train_size = params['init_train_size']
-#         self.sampling_strategy = params['sampling_strategy']
-#         self.p_out = params['p_out']
-#         self.lr = params['lr']
-#         pass
+
+class ScreeningActiveLearner:
+
+    def __init__(self, params):
+        self.n_instances_query = params['n_instances_query']
+        self.undersampling_thr = params['undersampling_thr']
+        self.seed = params['seed']
+        self.p_out = params['p_out']
+        self.lr = params['lr']
+        self.learners = params['learners']
+        self.predicates = list(self.learners.keys())
+
+    def select_predicate(self, param):
+        return self.predicates[param % 2]
+
+    def query(self, predicate):
+        l = self.learners[predicate]
+        query_idx, _ = l.learner.query(l.X_pool, n_instances=l.n_instances_query)
+        query_idx_new = l.undersample(query_idx)       # undersample the majority class
+
+        return query_idx_new
+
+    def teach(self, predicate, query_idx):
+        l = self.learners[predicate]
+        l.learner.teach(
+            X=l.X_pool[query_idx],
+            y=l.y_pool[query_idx]
+        )
+        # remove queried instance from pool
+        l.X_pool = np.delete(l.X_pool, query_idx, axis=0)
+        l.y_pool = np.delete(l.y_pool, query_idx)
