@@ -6,15 +6,24 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 # load and vectorize data
-def load_vectorize_data(file_name, seed):
+def load_vectorize_data(file_name, predicates, seed):
     df = pd.read_csv('../data/{}'.format(file_name))
+    df_screening_pos = df.loc[df['Y'] == 1]
+    df_screening_neg = df.loc[df['Y'] == 0]
 
-    X_pos = df.loc[df['Y'] == 1]['tokens'].values
-    pos_num = len(X_pos)
-    X_neg = df.loc[df['Y'] == 0]['tokens'].values
-    neg_num = len(X_neg)
-    X = np.append(X_pos, X_neg)
-    y = np.append(np.ones(pos_num), np.zeros(neg_num))
+    X_screening_pos = df_screening_pos['tokens'].values
+    X_screening_neg = df_screening_neg['tokens'].values
+    X = np.append(X_screening_pos, X_screening_neg)
+
+    # pos_num = len(X_screening_pos)
+    # neg_num = len(X_screening_neg)
+    y_screening = np.append(np.ones(len(X_screening_pos)),
+                            np.zeros(len(X_screening_neg)))
+
+    y_predicate = {}  # gt labels per predicate
+    for pr in predicates:
+        y_predicate[pr] = np.append(df_screening_pos[pr].values,
+                                    df_screening_neg[pr].values)
 
     # vectorize and transform text
     vectorizer = TfidfVectorizer(lowercase=False, max_features=2000, ngram_range=(1, 1))
@@ -22,10 +31,12 @@ def load_vectorize_data(file_name, seed):
 
     # shuffle X, y in unison
     np.random.seed(seed)
-    idx = np.random.permutation(len(y))
-    X, y = X[idx], y[idx]
+    idx = np.random.permutation(len(y_screening))
+    X, y_screening = X[idx], y_screening[idx]
+    for pr in predicates:
+        y_predicate[pr] = y_predicate[pr][idx]
 
-    return X, y
+    return X, y_screening, y_predicate
 
 
 # random sampling strategy for modAL

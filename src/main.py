@@ -11,10 +11,10 @@ seed = 123
 
 
 if __name__ == '__main__':
-    # load and transform data
     predicates = ['C14', 'C23']
     file_name = 'ohsumed_C14_C23_1grams.csv'
-    X_, y_ = load_vectorize_data(file_name, seed)
+    # load and transform data
+    X, y_screening, y_predicate = load_vectorize_data(file_name, predicates, seed)
 
     params = {
         'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced', random_state=seed)),
