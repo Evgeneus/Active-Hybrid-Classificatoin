@@ -17,7 +17,9 @@ class Learner(MetricsMixin):
         self.p_out = params['p_out']
         self.lr = params['lr']
 
-    def initialize_active_learner(self, X, y):
+    def setup_active_learner(self, X, y, X_test, y_test):
+        self.X_test, self.y_test = X_test, y_test
+
         # initial training data
         pos_idx_all = (y == 1).nonzero()[0]
         neg_idx_all = (y == 0).nonzero()[0]
@@ -59,48 +61,63 @@ class Learner(MetricsMixin):
 
         return query_idx_new
 
-    def run(self, X, y, X_test, y_test):
-        self.X_test, self.y_test = X_test, y_test
-        self.initialize_active_learner(X, y)
+    # def run(self, X, y, X_test, y_test):
+    #     self.X_test, self.y_test = X_test, y_test
+    #     self.setup_active_learner(X, y)
+    #
+    #     # estimate initial metrics
+    #     pre_, rec_, fbeta_, loss_ = self.compute_screening_metrics(self.y_test,
+    #                                                                self.learner.predict_proba(X_test),
+    #                                                                self.p_out, self.lr)
+    #     num_items_queried = self.init_train_size
+    #     proportion_positives = sum(self.learner.y_training) / len(self.learner.y_training)
+    #     data = [[num_items_queried, self.init_train_size, proportion_positives,
+    #              pre_, rec_, fbeta_, loss_]]  # [num_items_queried, training_size, precision, recall, f1]
+    #     # pool-based sampling
+    #     for idx in range(self.n_queries):
+    #         query_idx, _ = self.learner.query(self.X_pool, n_instances=self.n_instances_query)
+    #         num_items_queried += self.n_instances_query
+    #         query_idx_new = self.undersample(query_idx)   # undersample the majority class
+    #
+    #         self.learner.teach(
+    #             X=self.X_pool[query_idx_new],
+    #             y=self.y_pool[query_idx_new]
+    #         )
+    #         # remove queried instance from pool
+    #         self.X_pool = np.delete(self.X_pool, query_idx, axis=0)
+    #         self.y_pool = np.delete(self.y_pool, query_idx)
+    #
+    #         pre_, rec_, fbeta_, loss_ = self.compute_screening_metrics(self.y_test,
+    #                                                                    self.learner.predict_proba(X_test),
+    #                                                                    self.p_out, self.lr)
+    #         proportion_positives = sum(self.learner.y_training) / len(self.learner.y_training)
+    #         data.append([num_items_queried, len(self.learner.y_training),
+    #                      proportion_positives, pre_, rec_, fbeta_, loss_])
+    #
+    #         print('query no. {}: loss: {:1.3f}, fbeta: {:1.3f},'
+    #               'recall: {:1.3f}, precisoin: {:1.3f}'
+    #               .format(idx + 1, loss_, fbeta_, rec_, pre_), end='  ')
+    #         print('prop of + {:1.3f}'.format(proportion_positives))
+    #
+    #     print('-----------------')
+    #     return pd.DataFrame(data, columns=['num_items_queried',
+    #                                        'training_size',
+    #                                        'proportion_positives',
+    #                                        'precision',
+    #                                        'recall',
+    #                                        'fbeta', 'loss'])
 
-        # estimate initial metrics
-        pre_, rec_, fbeta_, loss_ = self.compute_screening_metrics(self.y_test,
-                                                                   self.learner.predict_proba(X_test),
-                                                                   self.p_out, self.lr)
-        num_items_queried = self.init_train_size
-        proportion_positives = sum(self.learner.y_training) / len(self.learner.y_training)
-        data = [[num_items_queried, self.init_train_size, proportion_positives,
-                 pre_, rec_, fbeta_, loss_]]  # [num_items_queried, training_size, precision, recall, f1]
-        # pool-based sampling
-        for idx in range(self.n_queries):
-            query_idx, _ = self.learner.query(self.X_pool, n_instances=self.n_instances_query)
-            num_items_queried += self.n_instances_query
-            query_idx_new = self.undersample(query_idx)   # undersample the majority class
-
-            self.learner.teach(
-                X=self.X_pool[query_idx_new],
-                y=self.y_pool[query_idx_new]
-            )
-            # remove queried instance from pool
-            self.X_pool = np.delete(self.X_pool, query_idx, axis=0)
-            self.y_pool = np.delete(self.y_pool, query_idx)
-
-            pre_, rec_, fbeta_, loss_ = self.compute_screening_metrics(self.y_test,
-                                                                       self.learner.predict_proba(X_test),
-                                                                       self.p_out, self.lr)
-            proportion_positives = sum(self.learner.y_training) / len(self.learner.y_training)
-            data.append([num_items_queried, len(self.learner.y_training),
-                         proportion_positives, pre_, rec_, fbeta_, loss_])
-
-            print('query no. {}: loss: {:1.3f}, fbeta: {:1.3f},'
-                  'recall: {:1.3f}, precisoin: {:1.3f}'
-                  .format(idx + 1, loss_, fbeta_, rec_, pre_), end='  ')
-            print('prop of + {:1.3f}'.format(proportion_positives))
-
-        print('-----------------')
-        return pd.DataFrame(data, columns=['num_items_queried',
-                                           'training_size',
-                                           'proportion_positives',
-                                           'precision',
-                                           'recall',
-                                           'fbeta', 'loss'])
+#
+# class ScreeningActiveLearner:
+#
+#     def __init__(self, params):
+#         self.clf = params['clf']
+#         self.n_queries = params['n_queries']
+#         self.n_instances_query = params['n_instances_query']
+#         self.undersampling_thr = params['undersampling_thr']
+#         self.seed = params['seed']
+#         self.init_train_size = params['init_train_size']
+#         self.sampling_strategy = params['sampling_strategy']
+#         self.p_out = params['p_out']
+#         self.lr = params['lr']
+#         pass

@@ -5,7 +5,7 @@ from sklearn.calibration import CalibratedClassifierCV
 from modAL.uncertainty import uncertainty_sampling
 
 from src.utils import load_vectorize_data
-from src.active_learning import Learner, ScreeningActiveLearner
+from src.active_learning import Learner
 
 seed = 123
 
@@ -28,19 +28,24 @@ if __name__ == '__main__':
         'lr': 10
     }
 
-    # dict of active learners per predicate
-    learners = {}
-    for pr in predicates:
-        learners[pr] = Learner(params)
-
-    pass
     # data_df = []
-    # k = 10
-    # skf = StratifiedKFold(n_splits=k, random_state=seed)
-    # for train_index, test_index in skf.split(X_, y_):
-    #     # split the data
-    #     X, X_test = X_[train_index], X_[test_index]
-    #     y, y_test = y_[train_index], y_[test_index]
+    k = 10
+    skf = StratifiedKFold(n_splits=k, random_state=seed)
+    for train_idx, test_idx in skf.split(X, y_screening):
+        # split training-test datasets
+        X_train, X_test = X[train_idx], X[test_idx]
+        y_screening_test = y_screening[test_idx]
+        y_predicate_train, y_predicate_test = {}, {}
+        for pr in predicates:
+            y_predicate_train[pr] = y_predicate[pr][train_idx]
+            y_predicate_test[pr] = y_predicate[pr][test_idx]
+
+        # dict of active learners per predicate
+        learners = {}
+        for pr in predicates:
+            learner = Learner(params)
+            learner.setup_active_learner(X_train, y_predicate_train[pr], X_test, y_predicate_test[pr])
+            learners[pr] = learner
 
 
     # SAL = ScreeningActiveLearner()
