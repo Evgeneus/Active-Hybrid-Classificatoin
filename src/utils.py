@@ -1,15 +1,29 @@
 import numpy as np
+import pandas as pd
 import warnings
 
+from sklearn.feature_extraction.text import TfidfVectorizer
 
-# load data from csv
-def load_data(predicate, df):
-    X_pos = df.loc[df[predicate] == 1]['tokens'].values
+
+# load and vectorize data
+def load_vectorize_data(file_name, seed):
+    df = pd.read_csv('../data/{}'.format(file_name))
+
+    X_pos = df.loc[df['Y'] == 1]['tokens'].values
     pos_num = len(X_pos)
-    X_neg = df.loc[df[predicate] == 0]['tokens'].values
+    X_neg = df.loc[df['Y'] == 0]['tokens'].values
     neg_num = len(X_neg)
     X = np.append(X_pos, X_neg)
     y = np.append(np.ones(pos_num), np.zeros(neg_num))
+
+    # vectorize and transform text
+    vectorizer = TfidfVectorizer(lowercase=False, max_features=2000, ngram_range=(1, 1))
+    X = vectorizer.fit_transform(X).toarray()
+
+    # shuffle X, y in unison
+    np.random.seed(seed)
+    idx = np.random.permutation(len(y))
+    X, y = X[idx], y[idx]
 
     return X, y
 
