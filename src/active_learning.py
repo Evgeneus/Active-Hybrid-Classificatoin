@@ -138,3 +138,11 @@ class ScreeningActiveLearner:
         # remove queried instance from pool
         l.X_pool = np.delete(l.X_pool, query_idx, axis=0)
         l.y_pool = np.delete(l.y_pool, query_idx)
+
+    def predict_proba(self, X):
+        proba_in = np.ones(X.shape[0])
+        for l in self.learners.values():
+            proba_in *= l.learner.predict_proba(X)[:, 1]
+        proba = np.stack((1-proba_in, proba_in), axis=1)
+
+        return proba
