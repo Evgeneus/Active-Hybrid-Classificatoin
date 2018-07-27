@@ -54,7 +54,7 @@ if __name__ == '__main__':
             pr = SAL.select_predicate(i)
             query_idx = SAL.query(pr)
             SAL.teach(pr, query_idx)
-            proba = SAL.predict_proba(X_test)
+            predicted = SAL.predict(X_test)
 
 
         # # start active learning
