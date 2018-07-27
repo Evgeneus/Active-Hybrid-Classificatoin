@@ -11,22 +11,10 @@ seed = 123
 
 
 if __name__ == '__main__':
-    predicates = ['C14', 'C23']
-    file_name = 'ohsumed_C14_C23_1grams.csv'
+    predicates = ['C04', 'C12']
+    file_name = 'ohsumed_C04_C12_1grams.csv'
     # load and transform data
     X, y_screening, y_predicate = load_vectorize_data(file_name, predicates, seed)
-
-    params = {
-        'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced', random_state=seed)),
-        'n_queries': 50,
-        'n_instances_query': 50,  # num of instances for labeling for 1 query
-        'undersampling_thr': 0.333,
-        'seed': seed,
-        'init_train_size': 10,
-        'sampling_strategy': uncertainty_sampling,
-        'p_out': 0.5,
-        'lr': 10
-    }
 
     # data_df = []
     k = 10
@@ -42,19 +30,41 @@ if __name__ == '__main__':
 
         # dict of active learners per predicate
         learners = {}
-        for pr in predicates:
+        for pr in predicates:  # setup predicate-based learners
+            params = {
+                'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced', random_state=seed)),
+                'undersampling_thr': 0.333,
+                'seed': seed,
+                'init_train_size': 10,
+                'sampling_strategy': uncertainty_sampling,
+                'p_out': 0.5,
+            }
             learner = Learner(params)
             learner.setup_active_learner(X_train, y_predicate_train[pr], X_test, y_predicate_test[pr])
             learners[pr] = learner
 
-        params['learners'] = learners
-        SAL = ScreeningActiveLearner(params)
-        n_instances_query = 50
-        for i in range(n_instances_query):
+        screening_params = {
+            'n_instances_query': 50,  # num of instances for labeling for 1 query
+            'seed': seed,
+            'init_train_size': 10,
+            'p_out': 0.65,
+            'lr': 10,
+            'learners': learners
+        }
+        SAL = ScreeningActiveLearner(screening_params)
+        n_queries = 1000
+        for i in range(n_queries):
             pr = SAL.select_predicate(i)
             query_idx = SAL.query(pr)
             SAL.teach(pr, query_idx)
             predicted = SAL.predict(X_test)
+            metrics = SAL.compute_screening_metrics(y_screening_test, predicted, SAL.lr)
+            pre, rec, fbeta, loss = metrics
+
+            print('query no. {}: loss: {:1.3f}, fbeta: {:1.3f}, '
+                          'recall: {:1.3f}, precisoin: {:1.3f}'
+                  .format(i + 1, loss, fbeta, rec, pre))
+
 
 
         # # start active learning

@@ -8,14 +8,11 @@ class Learner(MetricsMixin):
 
     def __init__(self, params):
         self.clf = params['clf']
-        self.n_queries = params['n_queries']
-        self.n_instances_query = params['n_instances_query']
         self.undersampling_thr = params['undersampling_thr']
         self.seed = params['seed']
         self.init_train_size = params['init_train_size']
         self.sampling_strategy = params['sampling_strategy']
         self.p_out = params['p_out']
-        self.lr = params['lr']
 
     def setup_active_learner(self, X, y, X_test, y_test):
         self.X_test, self.y_test = X_test, y_test
@@ -60,6 +57,20 @@ class Learner(MetricsMixin):
                 return query_idx_new
 
         return query_idx_new
+
+    # def print_metrics(self, pr):
+    #     predicted = [0 if p > self.p_out else 1 for p in self.learner.predict_proba(self.X_test)[:,0]]
+    #     pre_, rec_, fbeta_, loss_ = self.compute_screening_metrics(self.y_test,
+    #                                                                predicted,
+    #                                                                self.lr)
+    #     proportion_positives = sum(self.learner.y_training) / len(self.learner.y_training)
+    #     print('-----------------')
+    #     print('pr {}, loss: {:1.3f}, fbeta: {:1.3f},'
+    #           'recall: {:1.3f}, precisoin: {:1.3f}'
+    #           .format(pr, loss_, fbeta_, rec_, pre_), end='  ')
+    #     print('prop of + {:1.3f}'.format(proportion_positives))
+    #     print('-----------------')
+
 
     # def run(self, X, y, X_test, y_test):
     #     self.X_test, self.y_test = X_test, y_test
@@ -108,11 +119,10 @@ class Learner(MetricsMixin):
     #                                        'fbeta', 'loss'])
 
 
-class ScreeningActiveLearner:
+class ScreeningActiveLearner(MetricsMixin):
 
     def __init__(self, params):
         self.n_instances_query = params['n_instances_query']
-        self.undersampling_thr = params['undersampling_thr']
         self.seed = params['seed']
         self.p_out = params['p_out']
         self.lr = params['lr']
@@ -124,7 +134,7 @@ class ScreeningActiveLearner:
 
     def query(self, predicate):
         l = self.learners[predicate]
-        query_idx, _ = l.learner.query(l.X_pool, n_instances=l.n_instances_query)
+        query_idx, _ = l.learner.query(l.X_pool, n_instances=self.n_instances_query)
         query_idx_new = l.undersample(query_idx)       # undersample the majority class
 
         return query_idx_new

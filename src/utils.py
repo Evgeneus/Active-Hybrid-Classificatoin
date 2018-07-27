@@ -51,12 +51,11 @@ def random_sampling(_, X, n_instances=1, seed=123):
 class MetricsMixin:
 
     @staticmethod
-    def compute_screening_metrics(gt, predicted_p, p_out, lr):
+    def compute_screening_metrics(gt, predicted, lr):
         '''
         FP == False Inclusion
         FN == False Exclusion
         '''
-        predicted = [0 if pred_out > p_out else 1 for pred_out in predicted_p[:, 0]]
         fp = 0.
         fn = 0.
         tp = 0.
