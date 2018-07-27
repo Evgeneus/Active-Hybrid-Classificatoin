@@ -1,13 +1,12 @@
 import numpy as np
 import pandas as pd
-import warnings
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 # load and vectorize data
 def load_vectorize_data(file_name, predicates, seed):
-    df = pd.read_csv('../data/{}'.format(file_name))
+    df = pd.read_csv('../data/ohsumed_data/{}'.format(file_name))
     df_screening_pos = df.loc[df['Y'] == 1]
     df_screening_neg = df.loc[df['Y'] == 0]
 
@@ -47,36 +46,30 @@ def random_sampling(_, X, n_instances=1, seed=123):
     return query_idx, X[query_idx]
 
 
-# screening metrics, aimed to obtain high recall
-class MetricsMixin:
+# transfrom data from k-fold CV and print results in csv
+def transform_print(data_df, sampl_strategy, predicates):
+    # compute mean and std, and median over k-fold cross validation results
+    df_concat = pd.concat(data_df)
+    by_row_index = df_concat.groupby(df_concat.index)
+    df_means = by_row_index.mean()
+    df_std = by_row_index.std()
+    df_median = by_row_index.median()
 
-    @staticmethod
-    def compute_screening_metrics(gt, predicted, lr):
-        '''
-        FP == False Inclusion
-        FN == False Exclusion
-        '''
-        fp = 0.
-        fn = 0.
-        tp = 0.
-        tn = 0.
-        for gt_val, pred_val in zip(gt, predicted):
-            if gt_val and not pred_val:
-                fn += 1
-            if not gt_val and pred_val:
-                fp += 1
-            if gt_val and pred_val:
-                tp += 1
-            if not gt_val and not pred_val:
-                tn += 1
-        loss = (fn * lr + fp) / len(gt)
-        try:
-            recall = tp / (tp + fn)
-            precision = tp / (tp + fp)
-            beta = 1. / lr
-            fbeta = (beta + 1) * precision * recall / (beta * recall + precision)
-        except ZeroDivisionError:
-            warnings.warn('ZeroDivisionError -> recall, precision, fbeta = 0., 0., 0')
-            recall, precision, fbeta = 0., 0., 0
+    # form dataframe for printing out in csv
+    df_to_print = df_means
+    df_to_print.columns = ['num_items_queried', 'precision_mean',
+                           'recall_mean', 'f_beta_mean', 'loss_mean']
 
-        return precision, recall, fbeta, loss
+    df_to_print['precision_median'] = df_median['precision']
+    df_to_print['recall_median'] = df_median['recall']
+    df_to_print['f_beta_median'] = df_median['f_beta']
+    df_to_print['loss_median'] = df_median['loss']
+
+    df_to_print['precision_std'] = df_std['precision']
+    df_to_print['recall_std'] = df_std['recall']
+    df_to_print['f_beta_std'] = df_std['f_beta']
+    df_to_print['loss_std'] = df_std['loss']
+
+    df_to_print['sampling_strategy'] = sampl_strategy
+    df_to_print.to_csv('../data/multi_classifier_al/screening_al_{}_{}.csv'
+                       .format(predicates[0], predicates[1]), index=False)

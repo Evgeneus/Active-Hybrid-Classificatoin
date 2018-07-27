@@ -1,7 +1,41 @@
 import numpy as np
-import pandas as pd
 from modAL.models import ActiveLearner
-from src.utils import MetricsMixin
+import warnings
+
+
+# screening metrics, aimed to obtain high recall
+class MetricsMixin:
+
+    @staticmethod
+    def compute_screening_metrics(gt, predicted, lr):
+        '''
+        FP == False Inclusion
+        FN == False Exclusion
+        '''
+        fp = 0.
+        fn = 0.
+        tp = 0.
+        tn = 0.
+        for gt_val, pred_val in zip(gt, predicted):
+            if gt_val and not pred_val:
+                fn += 1
+            if not gt_val and pred_val:
+                fp += 1
+            if gt_val and pred_val:
+                tp += 1
+            if not gt_val and not pred_val:
+                tn += 1
+        loss = (fn * lr + fp) / len(gt)
+        try:
+            recall = tp / (tp + fn)
+            precision = tp / (tp + fp)
+            beta = 1. / lr
+            fbeta = (beta + 1) * precision * recall / (beta * recall + precision)
+        except ZeroDivisionError:
+            warnings.warn('ZeroDivisionError -> recall, precision, fbeta = 0., 0., 0')
+            recall, precision, fbeta = 0., 0., 0
+
+        return precision, recall, fbeta, loss
 
 
 class Learner(MetricsMixin):
@@ -57,66 +91,6 @@ class Learner(MetricsMixin):
                 return query_idx_new
 
         return query_idx_new
-
-    # def print_metrics(self, pr):
-    #     predicted = [0 if p > self.p_out else 1 for p in self.learner.predict_proba(self.X_test)[:,0]]
-    #     pre_, rec_, fbeta_, loss_ = self.compute_screening_metrics(self.y_test,
-    #                                                                predicted,
-    #                                                                self.lr)
-    #     proportion_positives = sum(self.learner.y_training) / len(self.learner.y_training)
-    #     print('-----------------')
-    #     print('pr {}, loss: {:1.3f}, fbeta: {:1.3f},'
-    #           'recall: {:1.3f}, precisoin: {:1.3f}'
-    #           .format(pr, loss_, fbeta_, rec_, pre_), end='  ')
-    #     print('prop of + {:1.3f}'.format(proportion_positives))
-    #     print('-----------------')
-
-
-    # def run(self, X, y, X_test, y_test):
-    #     self.X_test, self.y_test = X_test, y_test
-    #     self.setup_active_learner(X, y)
-    #
-    #     # estimate initial metrics
-    #     pre_, rec_, fbeta_, loss_ = self.compute_screening_metrics(self.y_test,
-    #                                                                self.learner.predict_proba(X_test),
-    #                                                                self.p_out, self.lr)
-    #     num_items_queried = self.init_train_size
-    #     proportion_positives = sum(self.learner.y_training) / len(self.learner.y_training)
-    #     data = [[num_items_queried, self.init_train_size, proportion_positives,
-    #              pre_, rec_, fbeta_, loss_]]  # [num_items_queried, training_size, precision, recall, f1]
-    #     # pool-based sampling
-    #     for idx in range(self.n_queries):
-    #         query_idx, _ = self.learner.query(self.X_pool, n_instances=self.n_instances_query)
-    #         num_items_queried += self.n_instances_query
-    #         query_idx_new = self.undersample(query_idx)   # undersample the majority class
-    #
-    #         self.learner.teach(
-    #             X=self.X_pool[query_idx_new],
-    #             y=self.y_pool[query_idx_new]
-    #         )
-    #         # remove queried instance from pool
-    #         self.X_pool = np.delete(self.X_pool, query_idx, axis=0)
-    #         self.y_pool = np.delete(self.y_pool, query_idx)
-    #
-    #         pre_, rec_, fbeta_, loss_ = self.compute_screening_metrics(self.y_test,
-    #                                                                    self.learner.predict_proba(X_test),
-    #                                                                    self.p_out, self.lr)
-    #         proportion_positives = sum(self.learner.y_training) / len(self.learner.y_training)
-    #         data.append([num_items_queried, len(self.learner.y_training),
-    #                      proportion_positives, pre_, rec_, fbeta_, loss_])
-    #
-    #         print('query no. {}: loss: {:1.3f}, fbeta: {:1.3f},'
-    #               'recall: {:1.3f}, precisoin: {:1.3f}'
-    #               .format(idx + 1, loss_, fbeta_, rec_, pre_), end='  ')
-    #         print('prop of + {:1.3f}'.format(proportion_positives))
-    #
-    #     print('-----------------')
-    #     return pd.DataFrame(data, columns=['num_items_queried',
-    #                                        'training_size',
-    #                                        'proportion_positives',
-    #                                        'precision',
-    #                                        'recall',
-    #                                        'fbeta', 'loss'])
 
 
 class ScreeningActiveLearner(MetricsMixin):
