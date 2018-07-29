@@ -46,6 +46,20 @@ def random_sampling(_, X, n_instances=1, seed=123):
     return query_idx, X[query_idx]
 
 
+# sampling takes into account conjunctive expression of predicates
+def objective_aware_sampling(classifier, X, learners_, n_instances=1, **uncertainty_measure_kwargs):
+    from modAL.uncertainty import classifier_uncertainty, multi_argmax
+    # TODO
+    learner = learners_[list(learners_.keys()).pop()].learner
+    l_prob_in = learner.predict_proba(X)[:, 1]
+
+    uncertainty = classifier_uncertainty(classifier, X, **uncertainty_measure_kwargs)
+    uncertainty_new = (l_prob_in + uncertainty) / 2
+    query_idx = multi_argmax(uncertainty_new, n_instances=n_instances)
+
+    return query_idx, X[query_idx]
+
+
 # transfrom data from k-fold CV and print results in csv
 def transform_print(data_df, sampl_strategy, predicates):
     # compute mean and std, and median over k-fold cross validation results
