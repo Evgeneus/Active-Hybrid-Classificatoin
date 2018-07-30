@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
-from modAL.uncertainty import uncertainty_sampling
+# from modAL.uncertainty import uncertainty_sampling
 
 from src.utils import load_vectorize_data, transform_print, objective_aware_sampling
 from src.active_learning import Learner, ScreeningActiveLearner
@@ -37,7 +37,6 @@ if __name__ == '__main__':
                 'undersampling_thr': 0.333,
                 'seed': seed,
                 'init_train_size': 10,
-                # 'sampling_strategy': uncertainty_sampling,
                 'sampling_strategy': objective_aware_sampling,
                 'p_out': 0.5,
             }
@@ -54,7 +53,7 @@ if __name__ == '__main__':
             'learners': learners
         }
         SAL = ScreeningActiveLearner(screening_params)
-        n_queries = 50
+        n_queries = 80
         num_items_queried = params['init_train_size']*len(predicates)
         data = []
         for i in range(n_queries):

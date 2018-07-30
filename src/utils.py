@@ -54,7 +54,7 @@ def objective_aware_sampling(classifier, X, learners_, n_instances=1, **uncertai
     l_prob_in = learner.predict_proba(X)[:, 1]
 
     uncertainty = classifier_uncertainty(classifier, X, **uncertainty_measure_kwargs)
-    uncertainty_new = (l_prob_in + uncertainty) / 2
+    uncertainty_new = np.sqrt(l_prob_in * uncertainty)
     query_idx = multi_argmax(uncertainty_new, n_instances=n_instances)
 
     return query_idx, X[query_idx]

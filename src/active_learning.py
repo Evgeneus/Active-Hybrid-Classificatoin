@@ -3,12 +3,15 @@ from modAL.models import ActiveLearner
 import warnings
 
 
-# class ActiveLearner(ActiveLearner):
-#
-#     def query(self, X, learners_, **query_kwargs):
-#         query_idx, query_instances = self.query_strategy(self, X, **query_kwargs)
-#         return query_idx, query_instances
+class ActiveLearner(ActiveLearner):
 
+    def query(self, X, learners_=None, **query_kwargs):
+        if self.query_strategy.__name__ not in ['objective_aware_sampling']:
+            query_idx, query_instances = self.query_strategy(self, X, **query_kwargs)
+        else:
+            query_idx, query_instances = self.query_strategy(self, X, learners_, **query_kwargs)
+
+        return query_idx, query_instances
 
 
 # screening metrics, aimed to obtain high recall
@@ -116,10 +119,12 @@ class ScreeningActiveLearner(MetricsMixin):
 
     def query(self, predicate):
         l = self.learners[predicate]
+        # all learners except the current one
+        learners_ = {l_: self.learners[l_] for l_ in self.learners if l_ not in [predicate]}
         query_idx, _ = l.learner.query(l.X_pool,
-                                       # all learners except the current one
-                                       learners_={l_: self.learners[l_] for l_ in self.learners if l_ not in [predicate]},
-                                       n_instances=self.n_instances_query)
+                                       n_instances=self.n_instances_query,
+                                       learners_=learners_
+                                       )
         query_idx_new = l.undersample(query_idx)       # undersample the majority class
 
         return query_idx_new
