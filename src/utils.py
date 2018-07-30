@@ -14,10 +14,8 @@ def load_vectorize_data(file_name, predicates, seed):
     X_screening_neg = df_screening_neg['tokens'].values
     X = np.append(X_screening_pos, X_screening_neg)
 
-    # pos_num = len(X_screening_pos)
-    # neg_num = len(X_screening_neg)
-    y_screening = np.append(np.ones(len(X_screening_pos)),
-                            np.zeros(len(X_screening_neg)))
+    y_screening = np.append(np.ones(X_screening_pos.shape[0]),
+                            np.zeros(X_screening_neg.shape[0]))
 
     y_predicate = {}  # gt labels per predicate
     for pr in predicates:
@@ -30,7 +28,7 @@ def load_vectorize_data(file_name, predicates, seed):
 
     # shuffle X, y in unison
     np.random.seed(seed)
-    idx = np.random.permutation(len(y_screening))
+    idx = np.random.permutation(y_screening.shape[0])
     X, y_screening = X[idx], y_screening[idx]
     for pr in predicates:
         y_predicate[pr] = y_predicate[pr][idx]
