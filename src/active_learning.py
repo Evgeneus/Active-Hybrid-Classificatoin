@@ -152,3 +152,8 @@ class ScreeningActiveLearner(MetricsMixin):
         predicted = [0 if p > self.p_out else 1 for p in proba_out]
 
         return predicted
+
+    def do_CV(self):
+        # do cross validation
+        # estimate and save statistics for extrapolation
+        pass
