@@ -58,7 +58,7 @@ if __name__ == '__main__':
         num_items_queried = params['init_train_size']*len(predicates)
         data = []
         for i in range(n_queries):
-            SAL.update_stat()
+            # SAL.update_stat()
 
             pr = SAL.select_predicate(i)
             query_idx = SAL.query(pr)

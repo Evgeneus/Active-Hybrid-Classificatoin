@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import interpolate
 from modAL.models import ActiveLearner
 import warnings
 
@@ -73,6 +74,19 @@ class ChoosePredicateMixin:
             }
 
     def select_predicate(self, param):
+        self.update_stat()
+
+        num_items_queried_all = (param + 1) * self.n_instances_query
+        if num_items_queried_all / len(self.predicates) < 100:
+            return self.predicates[param % 2]
+
+        # TODO
+        # extrapolated_val = self.extrapolate()
+        predicate = self._select_predicate_stat(param)
+
+        return predicate
+
+    def _select_predicate_stat(self, param):
         return self.predicates[param % 2]
 
     # compute and update performance statistic for predicate-based classifiers
@@ -99,9 +113,33 @@ class ChoosePredicateMixin:
             l.learner.fit(X, y)
 
             tpr_mean, tnr_mean = np.mean(tpr_list), np.mean(tnr_list)
-            self.stat[predicate]['num_items_queried'].append(self.n_instances_query)
+            try:
+                num_items_queried_prev = self.stat[predicate]['num_items_queried'][-1]
+            except IndexError:
+                num_items_queried_prev = 0
+            self.stat[predicate]['num_items_queried']\
+                .append(num_items_queried_prev + self.n_instances_query)
             self.stat[predicate]['tpr'].append(tpr_mean)
             self.stat[predicate]['tnr'].append(tnr_mean)
+
+    def extrapolate(self):
+        extrapolated_val = {}
+        for predicate in self.predicates:
+            s = self.stat[predicate]
+            num_items_queried = s['num_items_queried']
+            f_tpr = interpolate.interp1d(num_items_queried, s['tpr'],
+                                         fill_value='extrapolate',
+                                         kind='cubic')
+            f_tnr = interpolate.interp1d(num_items_queried, s['tnr'],
+                                         fill_value='extrapolate',
+                                         kind='cubic')
+
+            extrapolated_val[predicate] = {
+                'tpr': f_tpr(num_items_queried[-1]+self.n_instances_query),
+                'tnr': f_tnr(num_items_queried[-1]+self.n_instances_query)
+            }
+
+        return extrapolated_val
 
 
 class Learner(MetricsMixin):
