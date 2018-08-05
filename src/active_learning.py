@@ -2,6 +2,9 @@ import numpy as np
 from modAL.models import ActiveLearner
 import warnings
 
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import confusion_matrix
+
 
 class ActiveLearner(ActiveLearner):
 
@@ -47,6 +50,58 @@ class MetricsMixin:
             recall, precision, fbeta = 0., 0., 0
 
         return precision, recall, fbeta, loss
+
+    @staticmethod
+    def compute_tpr_tnr(gt, predicted):
+        tn, fp, fn, tp = confusion_matrix(gt, predicted).ravel()
+        TPR = tp / (tp + fn)  # sensitivity, recall, or true positive rate
+        TNR = tn / (tn + fp)  # specificity or true negative rate
+
+        return TPR, TNR
+
+
+class ChoosePredicateMixin:
+
+    def init_stat(self):
+        # initialize statistic for predicates
+        self.stat = {}
+        for predicate in self.predicates:
+            self.stat[predicate] = {
+                'num_items_queried': [],
+                'tpr': [],
+                'tnr': []
+            }
+
+    def select_predicate(self, param):
+        return self.predicates[param % 2]
+
+    # compute and update performance statistic for predicate-based classifiers
+    def update_stat(self):
+        # do cross validation
+        # estimate and save statistics for extrapolation
+        for predicate in self.predicates:
+            s = self.stat[predicate]
+            assert (len(s['num_items_queried']) == len(s['tpr']) == len(s['tnr'])), 'Stat attribute error'
+
+            l = self.learners[predicate]
+            X, y = l.learner.X_training, l.learner.y_training
+
+            tpr_list, tnr_list = [], []
+            k = 5
+            skf = StratifiedKFold(n_splits=k, random_state=self.seed)
+            for train_idx, val_idx in skf.split(X, y):
+                X_train, X_val = X[train_idx], X[val_idx]
+                y_train, y_val = y[train_idx], y[val_idx]
+                clf = l.learner.fit(X_train, y_train)
+                tpr, tnr = self.compute_tpr_tnr(y_val, clf.predict(X_val))
+                tpr_list.append(tpr)
+                tnr_list.append(tnr)
+            l.learner.fit(X, y)
+
+            tpr_mean, tnr_mean = np.mean(tpr_list), np.mean(tnr_list)
+            self.stat[predicate]['num_items_queried'].append(self.n_instances_query)
+            self.stat[predicate]['tpr'].append(tpr_mean)
+            self.stat[predicate]['tnr'].append(tnr_mean)
 
 
 class Learner(MetricsMixin):
@@ -104,7 +159,7 @@ class Learner(MetricsMixin):
         return query_idx_new
 
 
-class ScreeningActiveLearner(MetricsMixin):
+class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin):
 
     def __init__(self, params):
         self.n_instances_query = params['n_instances_query']
@@ -114,8 +169,8 @@ class ScreeningActiveLearner(MetricsMixin):
         self.learners = params['learners']
         self.predicates = list(self.learners.keys())
 
-    def select_predicate(self, param):
-        return self.predicates[param % 2]
+    # def select_predicate(self, param):
+    #     return self.predicates[param % 2]
 
     def query(self, predicate):
         l = self.learners[predicate]
@@ -152,8 +207,3 @@ class ScreeningActiveLearner(MetricsMixin):
         predicted = [0 if p > self.p_out else 1 for p in proba_out]
 
         return predicted
-
-    def do_CV(self):
-        # do cross validation
-        # estimate and save statistics for extrapolation
-        pass
