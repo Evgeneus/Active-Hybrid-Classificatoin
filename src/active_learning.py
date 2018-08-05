@@ -80,14 +80,21 @@ class ChoosePredicateMixin:
         if num_items_queried_all / len(self.predicates) < 100:
             return self.predicates[param % 2]
 
-        # TODO
-        # extrapolated_val = self.extrapolate()
-        predicate = self._select_predicate_stat(param)
+        extrapolated_val = self.extrapolate()
+        predicate = self._select_predicate(extrapolated_val)
 
         return predicate
 
-    def _select_predicate_stat(self, param):
-        return self.predicates[param % 2]
+    def _select_predicate(self, extrapolated_val):
+        predicate_loss = (None, float('inf'))
+        for key, val in extrapolated_val.items():
+            fnr = 1 - val['tpr']
+            fpr = 1 - val['tnr']
+            loss = self.lr * fnr + fpr
+            if predicate_loss[1] > loss:
+                predicate_loss = (key, loss)
+
+        return predicate_loss[0]
 
     # compute and update performance statistic for predicate-based classifiers
     def update_stat(self):
@@ -134,9 +141,21 @@ class ChoosePredicateMixin:
                                          fill_value='extrapolate',
                                          kind='cubic')
 
+            tpr = f_tpr(num_items_queried[-1] + self.n_instances_query)
+            if tpr > 1:
+                tpr = 1
+            elif tpr < 0:
+                tpr = 0
+
+            tnr = f_tnr(num_items_queried[-1] + self.n_instances_query)
+            if tnr > 1:
+                tnr = 1
+            elif tnr < 0:
+                tnr = 0
+
             extrapolated_val[predicate] = {
-                'tpr': f_tpr(num_items_queried[-1]+self.n_instances_query),
-                'tnr': f_tnr(num_items_queried[-1]+self.n_instances_query)
+                'tpr': tpr,
+                'tnr': tnr
             }
 
         return extrapolated_val
