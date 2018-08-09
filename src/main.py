@@ -1,10 +1,10 @@
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 from sklearn.svm import LinearSVC
-from sklearn.calibration import CalibratedClassifierCV
 # from modAL.uncertainty import uncertainty_sampling
 
-from src.utils import load_vectorize_data, transform_print, objective_aware_sampling
+from src.utils import load_vectorize_data, transform_print, \
+    objective_aware_sampling, CalibratedClassifierCV
 from src.active_learning import Learner, ScreeningActiveLearner
 
 seed = 123

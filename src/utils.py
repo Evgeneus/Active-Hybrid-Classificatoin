@@ -3,6 +3,10 @@ import pandas as pd
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+# related to CalibratedClassifierCV
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.utils.validation import check_is_fitted
+
 
 # load and vectorize data
 def load_vectorize_data(file_name, predicates, seed):
@@ -59,6 +63,34 @@ def objective_aware_sampling(classifier, X, learners_, n_instances=1, **uncertai
     query_idx = multi_argmax(uncertainty_weighted, n_instances=n_instances)
 
     return query_idx, X[query_idx]
+
+
+# add classification threshold to CalibratedClassifierCV
+class CalibratedClassifierCV(CalibratedClassifierCV):
+
+    def __init__(self, base_estimator=None, method='sigmoid', cv=3, p_out=0.5):
+        self.base_estimator = base_estimator
+        self.method = method
+        self.cv = cv
+        self.p_out = p_out
+
+    def predict(self, X):
+        """Predict the target of new samples. Can be different from the
+        prediction of the uncalibrated classifier.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            The samples.
+
+        Returns
+        -------
+        C : array, shape (n_samples,)
+            The predicted class.
+        """
+
+        check_is_fitted(self, ["classes_", "calibrated_classifiers_"])
+        return self.classes_[1 * (self.predict_proba(X)[:, 0] < self.p_out)]
 
 
 # transfrom data from k-fold CV and print results in csv
