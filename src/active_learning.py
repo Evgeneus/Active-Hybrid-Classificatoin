@@ -3,7 +3,7 @@ from scipy import interpolate
 from modAL.models import ActiveLearner
 import warnings
 
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, GridSearchCV
 from sklearn.metrics import confusion_matrix
 
 
@@ -216,7 +216,8 @@ class Learner(MetricsMixin):
         return query_idx_new
 
 
-class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin):
+# class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin):
+class ScreeningActiveLearner(MetricsMixin):
 
     def __init__(self, params):
         self.n_instances_query = params['n_instances_query']
@@ -226,8 +227,8 @@ class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin):
         self.learners = params['learners']
         self.predicates = list(self.learners.keys())
 
-    # def select_predicate(self, param):
-    #     return self.predicates[param % 2]
+    def select_predicate(self, param):
+        return self.predicates[param % 2]
 
     def query(self, predicate):
         l = self.learners[predicate]
@@ -243,13 +244,23 @@ class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin):
 
     def teach(self, predicate, query_idx):
         l = self.learners[predicate]
-        l.learner.teach(
-            X=l.X_pool[query_idx],
-            y=l.y_pool[query_idx]
-        )
+        X = np.concatenate((l.learner.X_training, l.X_pool[query_idx]))
+        y = np.concatenate((l.learner.y_training, l.y_pool[query_idx]))
         # remove queried instance from pool
         l.X_pool = np.delete(l.X_pool, query_idx, axis=0)
         l.y_pool = np.delete(l.y_pool, query_idx)
+
+        param_grid = {
+            'p_out': [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8],
+            'base_estimator__C': [0.01, 0.1, 1, 10],
+            'base_estimator__class_weight': ['balanced', {0: 1, 1: 2}, {0: 1, 1: 3}]
+        }
+        k = 5
+        grid = GridSearchCV(l.learner.estimator, cv=k, param_grid=param_grid,
+                            scoring='f1', refit=True, n_jobs=-1)
+        grid.fit(X, y)
+        l.learner.estimator = grid.best_estimator_
+        l.learner.fit(X, y)
 
     def predict_proba(self, X):
         proba_in = np.ones(X.shape[0])

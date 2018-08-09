@@ -90,7 +90,7 @@ class CalibratedClassifierCV(CalibratedClassifierCV):
         """
 
         check_is_fitted(self, ["classes_", "calibrated_classifiers_"])
-        return self.classes_[1 * (self.predict_proba(X)[:, 0] < self.p_out)]
+        return np.array([0 if p > self.p_out else 1 for p in self.predict_proba(X)[:, 0]])
 
 
 # transfrom data from k-fold CV and print results in csv

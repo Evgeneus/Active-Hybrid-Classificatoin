@@ -53,7 +53,7 @@ if __name__ == '__main__':
             'learners': learners
         }
         SAL = ScreeningActiveLearner(screening_params)
-        SAL.init_stat()  # initialize statistic for predicates
+        # SAL.init_stat()  # initialize statistic for predicates
         n_queries = 80
         num_items_queried = params['init_train_size']*len(predicates)
         data = []
