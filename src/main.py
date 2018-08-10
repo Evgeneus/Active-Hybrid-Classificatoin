@@ -38,7 +38,6 @@ if __name__ == '__main__':
                 'seed': seed,
                 'init_train_size': 10,
                 'sampling_strategy': objective_aware_sampling,
-                'p_out': 0.5,
             }
             learner = Learner(params)
             learner.setup_active_learner(X_train, y_predicate_train[pr], X_test, y_predicate_test[pr])

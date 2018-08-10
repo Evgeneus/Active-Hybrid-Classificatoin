@@ -4,7 +4,7 @@ from modAL.models import ActiveLearner
 import warnings
 
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, fbeta_score, make_scorer
 
 
 class ActiveLearner(ActiveLearner):
@@ -169,7 +169,7 @@ class Learner(MetricsMixin):
         self.seed = params['seed']
         self.init_train_size = params['init_train_size']
         self.sampling_strategy = params['sampling_strategy']
-        self.p_out = params['p_out']
+        self.p_out = 0.5
 
     def setup_active_learner(self, X, y, X_test, y_test):
         self.X_test, self.y_test = X_test, y_test
@@ -251,14 +251,17 @@ class ScreeningActiveLearner(MetricsMixin):
         l.y_pool = np.delete(l.y_pool, query_idx)
 
         param_grid = {
-            'p_out': [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8],
+            'p_out': [0.65, 0.7, 0.75],
             'base_estimator__C': [0.01, 0.1, 1, 10],
             'base_estimator__class_weight': ['balanced', {0: 1, 1: 2}, {0: 1, 1: 3}]
         }
         k = 5
         grid = GridSearchCV(l.learner.estimator, cv=k, param_grid=param_grid,
-                            scoring='f1', refit=True, n_jobs=-1)
+                            scoring=make_scorer(fbeta_score, beta=self.lr),
+                            refit=True, n_jobs=-1)
         grid.fit(X, y)
+        l.p_out = grid.best_params_['p_out']
+        # print(grid.best_score_, grid.best_params_)
         l.learner.estimator = grid.best_estimator_
         l.learner.fit(X, y)
 
