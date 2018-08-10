@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
+import warnings
 
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import confusion_matrix
 
 # related to CalibratedClassifierCV
 from sklearn.calibration import CalibratedClassifierCV
@@ -91,6 +93,49 @@ class CalibratedClassifierCV(CalibratedClassifierCV):
 
         check_is_fitted(self, ["classes_", "calibrated_classifiers_"])
         return np.array([0 if p > self.p_out else 1 for p in self.predict_proba(X)[:, 0]])
+
+
+# screening metrics, aimed to obtain high recall
+class MetricsMixin:
+
+    @staticmethod
+    def compute_screening_metrics(gt, predicted, lr):
+        '''
+        FP == False Inclusion
+        FN == False Exclusion
+        '''
+        fp = 0.
+        fn = 0.
+        tp = 0.
+        tn = 0.
+        for gt_val, pred_val in zip(gt, predicted):
+            if gt_val and not pred_val:
+                fn += 1
+            if not gt_val and pred_val:
+                fp += 1
+            if gt_val and pred_val:
+                tp += 1
+            if not gt_val and not pred_val:
+                tn += 1
+        loss = (fn * lr + fp) / len(gt)
+        try:
+            recall = tp / (tp + fn)
+            precision = tp / (tp + fp)
+            beta = 1. / lr
+            fbeta = (beta + 1) * precision * recall / (beta * recall + precision)
+        except ZeroDivisionError:
+            warnings.warn('ZeroDivisionError -> recall, precision, fbeta = 0., 0., 0')
+            recall, precision, fbeta = 0., 0., 0
+
+        return precision, recall, fbeta, loss
+
+    @staticmethod
+    def compute_tpr_tnr(gt, predicted):
+        tn, fp, fn, tp = confusion_matrix(gt, predicted).ravel()
+        TPR = tp / (tp + fn)  # sensitivity, recall, or true positive rate
+        TNR = tn / (tn + fp)  # specificity or true negative rate
+
+        return TPR, TNR
 
 
 # transfrom data from k-fold CV and print results in csv
