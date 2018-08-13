@@ -44,6 +44,14 @@ def random_sampling(_, X, n_instances=1, seed=123):
     return query_idx, X[query_idx]
 
 
+# certainty sampling strategy for modAL
+def certainty_sampling(classifier, X, n_instances=1, **predict_proba_kwargs):
+    prob_in = classifier.predict_proba(X, **predict_proba_kwargs)[:, 1]
+    query_idx = np.argpartition(prob_in, -n_instances)[-n_instances:]
+
+    return query_idx, X[query_idx]
+
+
 # sampling takes into account conjunctive expression of predicates
 def objective_aware_sampling(classifier, X, learners_, n_instances=1, **uncertainty_measure_kwargs):
     from modAL.uncertainty import classifier_uncertainty, multi_argmax
@@ -86,5 +94,5 @@ def transform_print(data_df, sampl_strategy, predicates):
     df_to_print['loss_std'] = df_std['loss']
 
     df_to_print['sampling_strategy'] = sampl_strategy
-    df_to_print.to_csv('../data/multi_classifier_al/screening_al_{}_{}.csv'
+    df_to_print.to_csv('../data/multi_classifier_al/screening_al_{}_{}_certainty.csv'
                        .format(predicates[0], predicates[1]), index=False)
