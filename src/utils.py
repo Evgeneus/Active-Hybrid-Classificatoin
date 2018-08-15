@@ -122,7 +122,7 @@ class MetricsMixin:
             recall = tp / (tp + fn)
             precision = tp / (tp + fp)
             beta = 1. / lr
-            fbeta = (beta + 1) * precision * recall / (beta * recall + precision)
+            fbeta = (beta ** 2 + 1) * precision * recall / (recall + beta ** 2 * precision)
         except ZeroDivisionError:
             warnings.warn('ZeroDivisionError -> recall, precision, fbeta = 0., 0., 0')
             recall, precision, fbeta = 0., 0., 0
