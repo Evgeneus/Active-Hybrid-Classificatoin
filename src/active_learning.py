@@ -209,16 +209,13 @@ class ScreeningActiveLearner(MetricsMixin):
         l.y_pool = np.delete(l.y_pool, query_idx)
 
         param_grid = {
-            'p_out': [0.65, 0.7, 0.75],
-            'base_estimator__C': [0.01, 0.1, 1, 10],
-            'base_estimator__class_weight': ['balanced', {0: 1, 1: 2}, {0: 1, 1: 3}]
+            'C': [0.01, 0.1, 1, 10],
+            'class_weight': ['balanced', {0: 1, 1: 2}, {0: 1, 1: 3}]
         }
         k = 5
         grid = GridSearchCV(l.learner.estimator, cv=k, param_grid=param_grid,
-                            scoring=make_scorer(fbeta_score, beta=self.lr),
-                            refit=True, n_jobs=-1)
+                            scoring='f1', refit=True, n_jobs=-1)
         grid.fit(X, y)
-        l.p_out = grid.best_params_['p_out']
         l.learner.estimator = grid.best_estimator_
         l.learner.fit(X, y)
 

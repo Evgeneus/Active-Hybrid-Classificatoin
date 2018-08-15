@@ -1,10 +1,10 @@
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
-from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
 # from modAL.uncertainty import uncertainty_sampling
 
 from src.utils import load_vectorize_data, transform_print, \
-    objective_aware_sampling, CalibratedClassifierCV
+    objective_aware_sampling
 from src.active_learning import Learner, ScreeningActiveLearner
 
 seed = 123
@@ -33,10 +33,10 @@ if __name__ == '__main__':
         learners = {}
         for pr in predicates:  # setup predicate-based learners
             params = {
-                'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced', random_state=seed)),
+                'clf': LogisticRegression(class_weight='balanced', random_state=seed),
                 'undersampling_thr': 0.333,
                 'seed': seed,
-                'init_train_size': 10,
+                'init_train_size': 20,
                 'sampling_strategy': objective_aware_sampling,
             }
             learner = Learner(params)
@@ -44,9 +44,9 @@ if __name__ == '__main__':
             learners[pr] = learner
 
         screening_params = {
-            'n_instances_query': 50,  # num of instances for labeling for 1 query
+            'n_instances_query': 500,  # num of instances for labeling for 1 query
             'seed': seed,
-            'init_train_size': 10,
+            'init_train_size': 20,
             'p_out': 0.65,
             'lr': 10,
             'learners': learners
@@ -77,5 +77,6 @@ if __name__ == '__main__':
                                                        'precision', 'recall',
                                                        'f_beta', 'loss']))
 
-    transform_print(data_df, params['sampling_strategy'].__name__, predicates)
+    transform_print(data_df, params['sampling_strategy'].__name__,
+                    predicates, 'screening_al_{}_{}'.format(predicates[0], predicates[1]))
     print('Done!')

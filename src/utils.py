@@ -75,34 +75,6 @@ def objective_aware_sampling(classifier, X, learners_, n_instances=1, **uncertai
     return query_idx, X[query_idx]
 
 
-# add classification threshold to CalibratedClassifierCV
-class CalibratedClassifierCV(CalibratedClassifierCV):
-
-    def __init__(self, base_estimator=None, method='sigmoid', cv=3, p_out=0.5):
-        self.base_estimator = base_estimator
-        self.method = method
-        self.cv = cv
-        self.p_out = p_out
-
-    def predict(self, X):
-        """Predict the target of new samples. Can be different from the
-        prediction of the uncalibrated classifier.
-
-        Parameters
-        ----------
-        X : array-like, shape (n_samples, n_features)
-            The samples.
-
-        Returns
-        -------
-        C : array, shape (n_samples,)
-            The predicted class.
-        """
-
-        check_is_fitted(self, ["classes_", "calibrated_classifiers_"])
-        return np.array([0 if p > self.p_out else 1 for p in self.predict_proba(X)[:, 0]])
-
-
 # screening metrics, aimed to obtain high recall
 class MetricsMixin:
 
@@ -147,7 +119,7 @@ class MetricsMixin:
 
 
 # transfrom data from k-fold CV and print results in csv
-def transform_print(data_df, sampl_strategy, predicates):
+def transform_print(data_df, sampl_strategy, predicates, file_name):
     # compute mean and std, and median over k-fold cross validation results
     df_concat = pd.concat(data_df)
     by_row_index = df_concat.groupby(df_concat.index)
@@ -171,5 +143,4 @@ def transform_print(data_df, sampl_strategy, predicates):
     df_to_print['loss_std'] = df_std['loss']
 
     df_to_print['sampling_strategy'] = sampl_strategy
-    df_to_print.to_csv('../data/multi_classifier_al/screening_al_{}_{}.csv'
-                       .format(predicates[0], predicates[1]), index=False)
+    df_to_print.to_csv('../data/multi_classifier_al/{}.csv'.format(file_name), index=False)
