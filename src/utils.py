@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import warnings
+import warnings, random
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import confusion_matrix
@@ -44,8 +44,8 @@ def load_vectorize_data(file_name, predicates, seed):
 
 # random sampling strategy for modAL
 def random_sampling(_, X, n_instances=1, seed=123):
-    np.random.seed(seed)
-    query_idx = np.random.randint(X.shape[0], size=n_instances)
+    random.seed(seed)
+    query_idx = np.array(random.sample(range(X.shape[0]), n_instances))
 
     return query_idx, X[query_idx]
 
