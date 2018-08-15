@@ -93,11 +93,9 @@ class ChoosePredicateMixin:
             s = self.stat[predicate]
             num_items_queried = s['num_items_queried']
             f_tpr = interpolate.interp1d(num_items_queried, s['tpr'],
-                                         fill_value='extrapolate',
-                                         kind='cubic')
+                                         fill_value='extrapolate')
             f_tnr = interpolate.interp1d(num_items_queried, s['tnr'],
-                                         fill_value='extrapolate',
-                                         kind='cubic')
+                                         fill_value='extrapolate')
 
             tpr = f_tpr(num_items_queried[-1] + self.n_instances_query)
             if tpr > 1:

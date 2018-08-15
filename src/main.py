@@ -47,7 +47,7 @@ if __name__ == '__main__':
             'n_instances_query': 500,  # num of instances for labeling for 1 query
             'seed': seed,
             'init_train_size': 20,
-            'p_out': 0.65,
+            'p_out': 0.55,
             'lr': 10,
             'learners': learners
         }
