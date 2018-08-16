@@ -60,6 +60,7 @@ if __name__ == '__main__':
         n_queries = 50
         num_items_queried = params['init_train_size']*len(predicates)
         data = []
+        beta = 3
         for i in range(n_queries):
             # SAL.update_stat()
 
@@ -67,7 +68,7 @@ if __name__ == '__main__':
             query_idx, query_idx_discard = SAL.query(pr)
             SAL.teach(pr, query_idx, query_idx_discard)
             predicted = SAL.predict(X_test)
-            metrics = SAL.compute_screening_metrics(y_screening_test, predicted, SAL.lr)
+            metrics = SAL.compute_screening_metrics(y_screening_test, predicted, SAL.lr, beta)
 
             pre, rec, fbeta, loss = metrics
             num_items_queried += SAL.n_instances_query

@@ -86,7 +86,7 @@ def objective_aware_sampling(classifier, X, learners_, n_instances=1, **uncertai
 class MetricsMixin:
 
     @staticmethod
-    def compute_screening_metrics(gt, predicted, lr):
+    def compute_screening_metrics(gt, predicted, lr, beta):
         '''
         FP == False Inclusion
         FN == False Exclusion
@@ -108,7 +108,7 @@ class MetricsMixin:
         try:
             recall = tp / (tp + fn)
             precision = tp / (tp + fp)
-            beta = 1. / lr
+            beta = beta
             fbeta = (beta ** 2 + 1) * precision * recall / (recall + beta ** 2 * precision)
         except ZeroDivisionError:
             warnings.warn('ZeroDivisionError -> recall, precision, fbeta = 0., 0., 0')
