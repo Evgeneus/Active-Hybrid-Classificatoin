@@ -214,7 +214,7 @@ class ScreeningActiveLearner(MetricsMixin):
         }
         k = 5
         grid = GridSearchCV(l.learner.estimator, cv=k, param_grid=param_grid,
-                            scoring='f1', refit=True, n_jobs=-1)
+                            scoring='neg_log_loss', refit=True, n_jobs=-1)
         grid.fit(X, y)
         l.learner.estimator = grid.best_estimator_
         l.learner.fit(X, y)

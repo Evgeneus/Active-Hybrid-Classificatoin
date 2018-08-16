@@ -5,7 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from modAL.uncertainty import uncertainty_sampling
 
 from src.utils import load_vectorize_data, transform_print, \
-    objective_aware_sampling, positive_certainty_sampling
+    objective_aware_sampling, positive_certainty_sampling, random_sampling
 from src.active_learning import Learner, ScreeningActiveLearner
 
 seed = 123
@@ -40,6 +40,7 @@ if __name__ == '__main__':
                 'seed': seed,
                 'init_train_size': init_train_size,
                 'sampling_strategy': objective_aware_sampling,
+                # 'sampling_strategy': random_sampling,
                 # 'sampling_strategy': uncertainty_sampling,
             }
             learner = Learner(params)
@@ -50,7 +51,7 @@ if __name__ == '__main__':
             'n_instances_query': 200,  # num of instances for labeling for 1 query
             'seed': seed,
             'init_train_size': init_train_size,
-            'p_out': 0.55,
+            'p_out': 0.7,
             'lr': 10,
             'learners': learners
         }
