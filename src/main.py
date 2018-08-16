@@ -65,12 +65,12 @@ if __name__ == '__main__':
             'seed': seed,
             'p_out': 0.65,
             'lr': 10,
+            'beta': 3,
             'learners': learners
         }
         SAL = ScreeningActiveLearner(screening_params)
         # SAL.init_stat()  # initialize statistic for predicates, uncomment if use predicate selection feature
         n_queries = 50
-        beta = 3
         num_items_queried = init_train_size*len(predicates)
         data = []
 
@@ -82,7 +82,7 @@ if __name__ == '__main__':
             SAL.fit_meta(X_train_init, y_screening_init)
 
             predicted = SAL.predict(X_test)
-            metrics = SAL.compute_screening_metrics(y_screening_test, predicted, SAL.lr, beta)
+            metrics = SAL.compute_screening_metrics(y_screening_test, predicted, SAL.lr, SAL.beta)
             pre, rec, fbeta, loss = metrics
             num_items_queried += SAL.n_instances_query
             data.append([num_items_queried, pre, rec, fbeta, loss])

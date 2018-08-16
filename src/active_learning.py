@@ -173,6 +173,7 @@ class ScreeningActiveLearner(MetricsMixin):
         self.seed = params['seed']
         self.p_out = params['p_out']
         self.lr = params['lr']
+        self.beta = params['beta']
         self.learners = params['learners']
         self.predicates = list(self.learners.keys())
 
@@ -214,14 +215,13 @@ class ScreeningActiveLearner(MetricsMixin):
         # p_out_list = [0.5, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
         p_out_values = np.arange(0.5, 0.95, 0.02)
         grid_p_out = dict.fromkeys(p_out_values, 0.)
-        beta = 1
         for p_out in p_out_values:
             self.p_out = p_out
             predicted = self.predict(X)
-            grid_p_out[p_out] = fbeta_score(y, predicted, beta)
+            grid_p_out[p_out] = fbeta_score(y, predicted, self.beta)
 
         self.p_out = max(grid_p_out.items(), key=operator.itemgetter(1))[0]
-        print('Screening clf threshold: ', self.p_out)
+        print('threshold: ', self.p_out)
 
     def predict_proba(self, X):
         proba_in = np.ones(X.shape[0])
