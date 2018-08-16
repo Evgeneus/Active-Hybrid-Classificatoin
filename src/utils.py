@@ -37,16 +37,17 @@ def load_vectorize_data(file_name, predicates, seed):
 
     return X, y_screening, y_predicate
 
-# def get_init_training_data_idx(y_screening, init_train_size, seed):
-#    # initial training data
-#    pos_idx_all = (y_screening == 1).nonzero()[0]
-#    neg_idx_all = (y_screening == 0).nonzero()[0]
-#    # randomly select initial balanced training dataset
-#    np.random.seed(seed)
-#    train_idx = np.concatenate([np.random.choice(pos_idx_all, init_train_size // 2, replace=False),
-#                                np.random.choice(neg_idx_all, init_train_size // 2, replace=False)])
-#
-#    return train_idx
+
+def get_init_training_data_idx(y_screening, init_train_size, seed):
+   # initial training data
+   pos_idx_all = (y_screening == 1).nonzero()[0]
+   neg_idx_all = (y_screening == 0).nonzero()[0]
+   # randomly select initial balanced training dataset
+   np.random.seed(seed)
+   train_idx = np.concatenate([np.random.choice(pos_idx_all, init_train_size // 2, replace=False),
+                               np.random.choice(neg_idx_all, init_train_size // 2, replace=False)])
+
+   return train_idx
 
 
 # random sampling strategy for modAL

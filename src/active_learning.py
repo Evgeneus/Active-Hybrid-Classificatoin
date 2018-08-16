@@ -1,3 +1,5 @@
+import operator
+from sklearn.metrics import fbeta_score
 import numpy as np
 from scipy import interpolate
 from modAL.models import ActiveLearner
@@ -123,31 +125,21 @@ class Learner(MetricsMixin):
         self.clf = params['clf']
         self.undersampling_thr = params['undersampling_thr']
         self.seed = params['seed']
-        self.init_train_size = params['init_train_size']
+        # self.init_train_size = params['init_train_size']
         self.sampling_strategy = params['sampling_strategy']
         self.p_out = 0.5
 
-    def setup_active_learner(self, X, y, X_test, y_test):
+    def setup_active_learner(self, X_train_init, y_train_init, X_pool, y_pool, X_test, y_test):
         self.X_test, self.y_test = X_test, y_test
 
-        # initial training data
-        pos_idx_all = (y == 1).nonzero()[0]
-        neg_idx_all = (y == 0).nonzero()[0]
-        # randomly select initial balanced training dataset
-        np.random.seed(self.seed)
-        train_idx = np.concatenate([np.random.choice(pos_idx_all, self.init_train_size // 2, replace=False),
-                                    np.random.choice(neg_idx_all, self.init_train_size // 2, replace=False)])
-        X_train = X[train_idx]
-        y_train = y[train_idx]
-
         # generate the pool
-        self.X_pool = np.delete(X, train_idx, axis=0)
-        self.y_pool = np.delete(y, train_idx)
+        self.X_pool = X_pool
+        self.y_pool = y_pool
 
         # initialize active learner
         self.learner = ActiveLearner(
             estimator=self.clf,
-            X_training=X_train, y_training=y_train,
+            X_training=X_train_init, y_training=y_train_init,
             query_strategy=self.sampling_strategy
         )
 
@@ -168,13 +160,12 @@ class Learner(MetricsMixin):
                 query_idx_new.append(y_neg_idx)
                 train_y_num += 1
             else:
-                # return query_idx_new
                 query_idx_discard.append(y_neg_idx)
 
         return query_idx_new, query_idx_discard
 
 
-# class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin):
+# class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin):  # uncomment if use predicate selection feature
 class ScreeningActiveLearner(MetricsMixin):
 
     def __init__(self, params):
@@ -196,7 +187,7 @@ class ScreeningActiveLearner(MetricsMixin):
                                        n_instances=self.n_instances_query,
                                        learners_=learners_
                                        )
-        query_idx_new, query_idx_discard = l.undersample(query_idx)       # undersample the majority class
+        query_idx_new, query_idx_discard = l.undersample(query_idx)  # undersample the majority class
 
         return query_idx_new, query_idx_discard
 
@@ -218,6 +209,19 @@ class ScreeningActiveLearner(MetricsMixin):
         grid.fit(X, y)
         l.learner.estimator = grid.best_estimator_
         l.learner.fit(X, y)
+
+    def fit_meta(self, X, y):
+        # p_out_list = [0.5, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+        p_out_values = np.arange(0.5, 0.95, 0.02)
+        grid_p_out = dict.fromkeys(p_out_values, 0.)
+        beta = 1
+        for p_out in p_out_values:
+            self.p_out = p_out
+            predicted = self.predict(X)
+            grid_p_out[p_out] = fbeta_score(y, predicted, beta)
+
+        self.p_out = max(grid_p_out.items(), key=operator.itemgetter(1))[0]
+        print('Screening clf threshold: ', self.p_out)
 
     def predict_proba(self, X):
         proba_in = np.ones(X.shape[0])
