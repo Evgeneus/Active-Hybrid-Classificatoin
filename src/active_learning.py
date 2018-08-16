@@ -212,15 +212,18 @@ class ScreeningActiveLearner(MetricsMixin):
         l.learner.fit(X, y)
 
     def fit_meta(self, X, y):
-        # p_out_list = [0.5, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
         p_out_values = np.arange(0.5, 0.95, 0.02)
         grid_p_out = dict.fromkeys(p_out_values, 0.)
         for p_out in p_out_values:
             self.p_out = p_out
             predicted = self.predict(X)
-            grid_p_out[p_out] = fbeta_score(y, predicted, self.beta)
+            # grid_p_out[p_out] = fbeta_score(y, predicted, self.beta)  # uncomment if optimize for f_beta
+            # uncomment if optimize for loss
+            _, _, _, grid_p_out[p_out] = self.compute_screening_metrics(y, predicted, self.lr, self.beta)
 
-        self.p_out = max(grid_p_out.items(), key=operator.itemgetter(1))[0]
+        # uncomment if optimize for f_beta
+        # self.p_out = max(grid_p_out.items(), key=operator.itemgetter(1))[0]
+        self.p_out = min(grid_p_out.items(), key=operator.itemgetter(1))[0]
         print('threshold: ', self.p_out)
 
     def predict_proba(self, X):
