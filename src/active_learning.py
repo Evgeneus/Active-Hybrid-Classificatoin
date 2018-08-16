@@ -3,7 +3,7 @@ from scipy import interpolate
 from modAL.models import ActiveLearner
 
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
-from sklearn.metrics import fbeta_score, make_scorer
+# from sklearn.metrics import fbeta_score, make_scorer
 
 from .utils import MetricsMixin
 
@@ -156,7 +156,8 @@ class Learner(MetricsMixin):
         train_y_num = len(self.learner.y_training)
 
         pos_y_idx = (self.y_pool[query_idx] == 1).nonzero()[0]  # add all positive items from queried items
-        query_idx_new = list(query_idx[pos_y_idx])                         # delete positive idx from queried query_idx
+        query_idx_new = list(query_idx[pos_y_idx])                        # delete positive idx from queried query_idx
+        query_idx_discard = []
         query_neg_idx = np.delete(query_idx, pos_y_idx)
 
         pos_y_num += len(pos_y_idx)
@@ -167,9 +168,10 @@ class Learner(MetricsMixin):
                 query_idx_new.append(y_neg_idx)
                 train_y_num += 1
             else:
-                return query_idx_new
+                # return query_idx_new
+                query_idx_discard.append(y_neg_idx)
 
-        return query_idx_new
+        return query_idx_new, query_idx_discard
 
 
 # class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin):
@@ -194,17 +196,17 @@ class ScreeningActiveLearner(MetricsMixin):
                                        n_instances=self.n_instances_query,
                                        learners_=learners_
                                        )
-        query_idx_new = l.undersample(query_idx)       # undersample the majority class
+        query_idx_new, query_idx_discard = l.undersample(query_idx)       # undersample the majority class
 
-        return query_idx_new
+        return query_idx_new, query_idx_discard
 
-    def teach(self, predicate, query_idx):
+    def teach(self, predicate, query_idx, query_idx_discard):
         l = self.learners[predicate]
         X = np.concatenate((l.learner.X_training, l.X_pool[query_idx]))
         y = np.concatenate((l.learner.y_training, l.y_pool[query_idx]))
         # remove queried instance from pool
-        l.X_pool = np.delete(l.X_pool, query_idx, axis=0)
-        l.y_pool = np.delete(l.y_pool, query_idx)
+        l.X_pool = np.delete(l.X_pool, np.concatenate((query_idx, query_idx_discard)), axis=0)
+        l.y_pool = np.delete(l.y_pool, np.concatenate((query_idx, query_idx_discard)))
 
         param_grid = {
             'C': [0.01, 0.1, 1, 10],

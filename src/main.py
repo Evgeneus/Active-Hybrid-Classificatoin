@@ -1,10 +1,11 @@
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import StratifiedKFold
 from sklearn.linear_model import LogisticRegression
-# from modAL.uncertainty import uncertainty_sampling
+from modAL.uncertainty import uncertainty_sampling
 
 from src.utils import load_vectorize_data, transform_print, \
-    objective_aware_sampling
+    objective_aware_sampling, positive_certainty_sampling
 from src.active_learning import Learner, ScreeningActiveLearner
 
 seed = 123
@@ -17,6 +18,7 @@ if __name__ == '__main__':
     X, y_screening, y_predicate = load_vectorize_data(file_name, predicates, seed)
 
     data_df = []
+    init_train_size = 50
     k = 10
     skf = StratifiedKFold(n_splits=k, random_state=seed)
     for train_idx, test_idx in skf.split(X, y_screening):
@@ -36,32 +38,33 @@ if __name__ == '__main__':
                 'clf': LogisticRegression(class_weight='balanced', random_state=seed),
                 'undersampling_thr': 0.333,
                 'seed': seed,
-                'init_train_size': 20,
+                'init_train_size': init_train_size,
                 'sampling_strategy': objective_aware_sampling,
+                # 'sampling_strategy': uncertainty_sampling,
             }
             learner = Learner(params)
             learner.setup_active_learner(X_train, y_predicate_train[pr], X_test, y_predicate_test[pr])
             learners[pr] = learner
 
         screening_params = {
-            'n_instances_query': 500,  # num of instances for labeling for 1 query
+            'n_instances_query': 200,  # num of instances for labeling for 1 query
             'seed': seed,
-            'init_train_size': 20,
+            'init_train_size': init_train_size,
             'p_out': 0.55,
             'lr': 10,
             'learners': learners
         }
         SAL = ScreeningActiveLearner(screening_params)
         # SAL.init_stat()  # initialize statistic for predicates
-        n_queries = 80
+        n_queries = 50
         num_items_queried = params['init_train_size']*len(predicates)
         data = []
         for i in range(n_queries):
             # SAL.update_stat()
 
             pr = SAL.select_predicate(i)
-            query_idx = SAL.query(pr)
-            SAL.teach(pr, query_idx)
+            query_idx, query_idx_discard = SAL.query(pr)
+            SAL.teach(pr, query_idx, query_idx_discard)
             predicted = SAL.predict(X_test)
             metrics = SAL.compute_screening_metrics(y_screening_test, predicted, SAL.lr)
 

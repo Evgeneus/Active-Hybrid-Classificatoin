@@ -5,10 +5,6 @@ import warnings, random
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import confusion_matrix
 
-# related to CalibratedClassifierCV
-from sklearn.calibration import CalibratedClassifierCV
-from sklearn.utils.validation import check_is_fitted
-
 
 # load and vectorize data
 def load_vectorize_data(file_name, predicates, seed):
@@ -40,6 +36,17 @@ def load_vectorize_data(file_name, predicates, seed):
         y_predicate[pr] = y_predicate[pr][idx]
 
     return X, y_screening, y_predicate
+
+# def get_init_training_data_idx(y_screening, init_train_size, seed):
+#    # initial training data
+#    pos_idx_all = (y_screening == 1).nonzero()[0]
+#    neg_idx_all = (y_screening == 0).nonzero()[0]
+#    # randomly select initial balanced training dataset
+#    np.random.seed(seed)
+#    train_idx = np.concatenate([np.random.choice(pos_idx_all, init_train_size // 2, replace=False),
+#                                np.random.choice(neg_idx_all, init_train_size // 2, replace=False)])
+#
+#    return train_idx
 
 
 # random sampling strategy for modAL
