@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
-from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
+from sklearn.calibration import CalibratedClassifierCV
 from modAL.uncertainty import uncertainty_sampling
 
 from src.utils import load_vectorize_data, transform_print, \
@@ -18,7 +19,7 @@ if __name__ == '__main__':
     X, y_screening, y_predicate = load_vectorize_data(file_name, predicates, seed)
 
     data_df = []
-    init_train_size = 50
+    init_train_size = 20
     k = 10
     skf = StratifiedKFold(n_splits=k, random_state=seed)
     for train_idx, test_idx in skf.split(X, y_screening):
@@ -45,7 +46,8 @@ if __name__ == '__main__':
         learners = {}
         for pr in predicates:  # setup predicate-based learners
             learner_params = {
-                'clf': LogisticRegression(class_weight='balanced', random_state=seed),
+                # 'clf': LogisticRegression(class_weight='balanced', random_state=seed),
+                'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced', random_state=seed)),
                 'undersampling_thr': 0.333,
                 'seed': seed,
                 'p_out': 0.5,
@@ -63,8 +65,8 @@ if __name__ == '__main__':
         screening_params = {
             'n_instances_query': 200,  # num of instances for labeling for 1 query
             'seed': seed,
-            'p_out': 0.65,
-            'lr': 10,
+            'p_out': 0.7,
+            'lr': 5,
             'beta': 3,
             'learners': learners
         }
@@ -79,7 +81,7 @@ if __name__ == '__main__':
             pr = SAL.select_predicate(i)
             query_idx, query_idx_discard = SAL.query(pr)
             SAL.teach(pr, query_idx, query_idx_discard)
-            SAL.fit_meta(X_train_init, y_screening_init)
+            # SAL.fit_meta(X_train_init, y_screening_init)
 
             predicted = SAL.predict(X_test)
             metrics = SAL.compute_screening_metrics(y_screening_test, predicted, SAL.lr, SAL.beta)
