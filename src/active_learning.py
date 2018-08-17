@@ -202,7 +202,7 @@ class ScreeningActiveLearner(MetricsMixin):
 
         param_grid = {
             'base_estimator__C': [0.01, 0.1, 1, 10],
-            # 'base_estimator__class_weight': ['balanced', {0: 1, 1: 2}, {0: 1, 1: 3}]
+            'base_estimator__class_weight': ['balanced', {0: 1, 1: 2}, {0: 1, 1: 3}]
         }
         k = 5
         grid = GridSearchCV(l.learner.estimator, cv=k, param_grid=param_grid,

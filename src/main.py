@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     data_df = []
     init_train_size = 20
-    k = 10
+    k = 5
     skf = StratifiedKFold(n_splits=k, random_state=seed)
     for train_idx, test_idx in skf.split(X, y_screening):
         print('-------------------------------')
@@ -46,7 +46,6 @@ if __name__ == '__main__':
         learners = {}
         for pr in predicates:  # setup predicate-based learners
             learner_params = {
-                # 'clf': LogisticRegression(class_weight='balanced', random_state=seed),
                 'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced', random_state=seed)),
                 'undersampling_thr': 0.333,
                 'seed': seed,
