@@ -74,13 +74,38 @@ def objective_aware_sampling(classifier, X, learners_, n_instances=1, **uncertai
     if learners_:
         for l in learners_.values():
             l_prob_in *= l.learner.predict_proba(X)[:, 1]
-        uncertainty_weighted = np.power(l_prob_in * uncertainty, 1 / (len(learners_) + 1))
+        uncertainty_weighted = l_prob_in * uncertainty
     else:
         uncertainty_weighted = uncertainty
 
     query_idx = multi_argmax(uncertainty_weighted, n_instances=n_instances)
 
     return query_idx, X[query_idx]
+
+# # sampling takes into account conjunctive expression of predicates
+# def screening_sampling(classifier, X, learners_, n_instances=1, **uncertainty_measure_kwargs):
+#     from modAL.uncertainty import classifier_uncertainty, multi_argmax
+#     epsilon = 0.1
+#     uncertainty = classifier_uncertainty(classifier, X, **uncertainty_measure_kwargs)
+#
+#     # np.random.seed(seed=123)
+#     if np.random.binomial(1, epsilon):
+#         if learners_:
+#             for l in learners_.values():
+#                 uncertainty *= classifier_uncertainty(l.clf, X, **uncertainty_measure_kwargs)
+#         uncertainty_weighted = uncertainty
+#     else:
+#         l_prob_in = np.ones(X.shape[0])
+#         if learners_:
+#             for l in learners_.values():
+#                 l_prob_in *= l.learner.predict_proba(X)[:, 1]
+#             uncertainty_weighted = l_prob_in * uncertainty
+#         else:
+#             uncertainty_weighted = uncertainty
+#
+#     query_idx = multi_argmax(uncertainty_weighted, n_instances=n_instances)
+#
+#     return query_idx, X[query_idx]
 
 
 # screening metrics, aimed to obtain high recall
