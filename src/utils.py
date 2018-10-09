@@ -140,7 +140,7 @@ class MetricsMixin:
             warnings.warn('ZeroDivisionError -> recall, precision, fbeta = 0., 0., 0')
             recall, precision, fbeta = 0., 0., 0
 
-        return precision, recall, fbeta, loss
+        return precision, recall, fbeta, loss, fn, fp
 
     @staticmethod
     def compute_tpr_tnr(gt, predicted):
@@ -163,17 +163,23 @@ def transform_print(data_df, sampl_strategy, predicates, file_name):
     # form dataframe for printing out in csv
     df_to_print = df_means
     df_to_print.columns = ['num_items_queried', 'precision_mean',
-                           'recall_mean', 'f_beta_mean', 'loss_mean']
+                           'recall_mean', 'f_beta_mean', 'loss_mean',
+                           'fn_count_mean', 'fp_count_mean']
 
     df_to_print['precision_median'] = df_median['precision']
     df_to_print['recall_median'] = df_median['recall']
     df_to_print['f_beta_median'] = df_median['f_beta']
     df_to_print['loss_median'] = df_median['loss']
+    df_to_print['fn_count_median'] = df_median['fn_count']
+    df_to_print['fp_count_median'] = df_median['fp_count']
 
     df_to_print['precision_std'] = df_std['precision']
     df_to_print['recall_std'] = df_std['recall']
     df_to_print['f_beta_std'] = df_std['f_beta']
     df_to_print['loss_std'] = df_std['loss']
+    df_to_print['fn_count_std'] = df_std['fn_count']
+    df_to_print['fp_count_std'] = df_std['fp_count']
+
 
     df_to_print['sampling_strategy'] = sampl_strategy
     df_to_print.to_csv('../data/multi_classifier_al/{}.csv'.format(file_name), index=False)

@@ -84,16 +84,17 @@ if __name__ == '__main__':
 
             predicted = SAL.predict(X_test)
             metrics = SAL.compute_screening_metrics(y_screening_test, predicted, SAL.lr, SAL.beta)
-            pre, rec, fbeta, loss = metrics
+            pre, rec, fbeta, loss, fn_count, fp_count = metrics
             num_items_queried += SAL.n_instances_query
-            data.append([num_items_queried, pre, rec, fbeta, loss])
+            data.append([num_items_queried, pre, rec, fbeta, loss, fn_count, fp_count])
 
             print('query no. {}: loss: {:1.3f}, fbeta: {:1.3f}, '
                           'recall: {:1.3f}, precisoin: {:1.3f}'
                   .format(i + 1, loss, fbeta, rec, pre))
             data_df.append(pd.DataFrame(data, columns=['num_items_queried',
                                                        'precision', 'recall',
-                                                       'f_beta', 'loss']))
+                                                       'f_beta', 'loss',
+                                                       'fn_count', 'fp_count']))
 
     transform_print(data_df, learner_params['sampling_strategy'].__name__,
                     predicates, 'screening_al_{}_{}'.format(predicates[0], predicates[1]))
