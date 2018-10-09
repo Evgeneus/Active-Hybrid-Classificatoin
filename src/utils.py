@@ -182,4 +182,4 @@ def transform_print(data_df, sampl_strategy, predicates, file_name):
 
 
     df_to_print['sampling_strategy'] = sampl_strategy
-    df_to_print.to_csv('../data/multi_classifier_al/{}.csv'.format(file_name), index=False)
+    df_to_print.to_csv('../output/machines_and_experts/{}.csv'.format(file_name), index=False)
