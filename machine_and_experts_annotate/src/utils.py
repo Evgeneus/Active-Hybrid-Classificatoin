@@ -8,7 +8,7 @@ from sklearn.metrics import confusion_matrix
 
 # load and vectorize data
 def load_vectorize_data(file_name, predicates, seed):
-    df = pd.read_csv('../../data/ohsumed_data/{}'.format(file_name))
+    df = pd.read_csv('../../data/amazon-sentiment-dataset/{}'.format(file_name))
     df_screening_pos = df.loc[df['Y'] == 1]
     df_screening_neg = df.loc[df['Y'] == 0]
 
@@ -37,11 +37,12 @@ def load_vectorize_data(file_name, predicates, seed):
 
     return X, y_screening, y_predicate
 
-# TO DO!!!
-def get_init_training_data_idx(y_screening, init_train_size, seed):
+
+def get_init_training_data_idx(y_screening, y_predicate_train, init_train_size, seed):
    # initial training data
    pos_idx_all = (y_screening == 1).nonzero()[0]
-   neg_idx_all = (y_screening == 0).nonzero()[0]
+   # all predicates are negative
+   neg_idx_all = (sum(list(y_predicate_train.values())) == 0).nonzero()[0]
    # randomly select initial balanced training dataset
    np.random.seed(seed)
    train_idx = np.concatenate([np.random.choice(pos_idx_all, init_train_size // 2, replace=False),

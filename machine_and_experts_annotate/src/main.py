@@ -11,8 +11,8 @@ from machine_and_experts_annotate.src.active_learning import Learner, ScreeningA
 seed = 123
 
 if __name__ == '__main__':
-    predicates = ['C04', 'C12']
-    file_name = 'ohsumed_C04_C12_1grams.csv'
+    predicates = ['is_negative', 'is_book']
+    file_name = '100000_reviews_lemmatized.csv'
     # load and transform data
     X, y_screening, y_predicate = load_vectorize_data(file_name, predicates, seed)
 
@@ -25,10 +25,11 @@ if __name__ == '__main__':
         # split training-test datasets
         X_train, X_test = X[train_idx], X[test_idx]
         y_screening_train, y_screening_test = y_screening[train_idx], y_screening[test_idx]
-        """create initial training dataset for all predicates
-           the dataset will be further used for fine tining screening out threshold """
-        # TO CHANGE TO VALIDATION DATA!!!!!!
-        init_train_idx = get_init_training_data_idx(y_screening_train, init_train_size, seed)
+        y_predicate_train = {}
+        for pr in predicates:
+            y_predicate_train[pr] = y_predicate[pr][train_idx]
+        # creating balanced training data
+        init_train_idx = get_init_training_data_idx(y_screening_train, y_predicate_train, init_train_size, seed)
 
         y_predicate_pool, y_predicate_train_init, y_predicate_test = {}, {}, {}
         for pr in predicates:
