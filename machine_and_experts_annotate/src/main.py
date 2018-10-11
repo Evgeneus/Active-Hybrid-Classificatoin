@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.model_selection import StratifiedKFold
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
+from modAL.uncertainty import uncertainty_sampling
 
 from machine_and_experts_annotate.src.utils import transform_print, \
     objective_aware_sampling, get_init_training_data_idx, load_data, Vectorizer
