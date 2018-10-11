@@ -5,8 +5,9 @@ from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
 from modAL.uncertainty import uncertainty_sampling
 
-from machine_and_experts_annotate.src.utils import transform_print, \
+from machine_and_experts_annotate.src.utils import transform_print, random_sampling, \
     objective_aware_sampling, get_init_training_data_idx, load_data, Vectorizer
+from sklearn.linear_model import LogisticRegression
 from machine_and_experts_annotate.src.active_learning import Learner, ScreeningActiveLearner
 
 seed = 123
@@ -29,23 +30,22 @@ if __name__ == '__main__':
         X_train = vectorizer.transform(X[train_idx])
         X_test = vectorizer.transform(X[test_idx])
 
-        y_screening_train, y_screening_test = y_screening[train_idx], y_screening[test_idx]
-        y_predicate_train = {}
-        for pr in predicates:
-            y_predicate_train[pr] = y_predicate[pr][train_idx]
-        # creating balanced init training data
-        init_train_idx = get_init_training_data_idx(y_screening_train, y_predicate_train, init_train_size, seed)
-
-        y_predicate_pool, y_predicate_train_init, y_predicate_test = {}, {}, {}
+        y_screening_pool, y_screening_test = y_screening[train_idx], y_screening[test_idx]
+        y_predicate_pool = {}
         for pr in predicates:
             y_predicate_pool[pr] = y_predicate[pr][train_idx]
+
+        # creating balanced init training data
+        init_train_idx = get_init_training_data_idx(y_screening_pool, y_predicate_pool, init_train_size, seed)
+        y_predicate_train_init = {}
+        for pr in predicates:
             y_predicate_train_init[pr] = y_predicate_pool[pr][init_train_idx]
             y_predicate_pool[pr] = np.delete(y_predicate_pool[pr], init_train_idx)
+        y_screening_init = y_screening_pool[init_train_idx]
+        y_screening_pool = np.delete(y_screening_pool, init_train_idx)
 
         X_train_init = X_train[init_train_idx]
         X_pool = np.delete(X_train, init_train_idx, axis=0)
-        y_screening_init = y_screening_train[init_train_idx]
-        y_screening_train = np.delete(y_screening_train, init_train_idx)
 
         # dict of active learners per predicate
         learners = {}
@@ -56,15 +56,13 @@ if __name__ == '__main__':
                 'undersampling_thr': 0.3,
                 'seed': seed,
                 'p_out': 0.5,
-                'sampling_strategy': objective_aware_sampling,
+                'sampling_strategy': uncertainty_sampling,
             }
             learner = Learner(learner_params)
 
-            y_train_init = y_predicate[pr][train_idx][init_train_idx]
-            y_pool = np.delete(y_predicate[pr][train_idx], init_train_idx)
             y_test = y_predicate[pr][test_idx]
-
-            learner.setup_active_learner(X_train_init, y_train_init, X_pool, y_pool, X_test, y_test)
+            learner.setup_active_learner(X_train_init, y_predicate_train_init[pr],
+                                         X_pool, y_predicate_pool[pr], X_test, y_test)
             learners[pr] = learner
 
         screening_params = {
@@ -89,7 +87,12 @@ if __name__ == '__main__':
             # SAL.fit_meta(X_train_init, y_screening_init)
 
             predicted = SAL.predict(X_test)
-            metrics = SAL.compute_screening_metrics(y_screening_test, predicted, SAL.lr, SAL.beta)
+            # if only one predicate -> keep y_test as predicate's y_test
+            if len(predicates) == 1:
+                y_test_ = y_predicate[pr][test_idx]
+            else:
+                y_test_ = y_screening_test
+            metrics = SAL.compute_screening_metrics(y_test_, predicted, SAL.lr, SAL.beta)
             pre, rec, fbeta, loss, fn_count, fp_count = metrics
             num_items_queried += SAL.n_instances_query
             data.append([num_items_queried, pre, rec, fbeta, loss, fn_count, fp_count])
