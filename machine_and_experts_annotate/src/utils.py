@@ -6,34 +6,72 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import confusion_matrix
 
 
-# load and vectorize data
-def load_vectorize_data(file_name, predicates, seed):
-    df = pd.read_csv('../../data/amazon-sentiment-dataset/{}'.format(file_name))
-    df_screening_pos = df.loc[df['Y'] == 1]
-    df_screening_neg = df.loc[df['Y'] == 0]
+class Vectorizer:
+    def __init__(self, X):
+        self.vectorizer = TfidfVectorizer(lowercase=False, max_features=2000, ngram_range=(1, 2))
+        self.vectorizer.fit(X)
 
-    X_screening_pos = df_screening_pos['tokens'].values
-    X_screening_neg = df_screening_neg['tokens'].values
-    X = np.append(X_screening_pos, X_screening_neg)
+    def transform(self, X):
+        return self.vectorizer.transform(X).toarray()
 
-    y_screening = np.append(np.ones(X_screening_pos.shape[0]),
-                            np.zeros(X_screening_neg.shape[0]))
 
+# screening metrics, aimed to obtain high recall
+class MetricsMixin:
+
+    @staticmethod
+    def compute_screening_metrics(gt, predicted, lr, beta):
+        '''
+        FP == False Inclusion
+        FN == False Exclusion
+        '''
+        fp = 0.
+        fn = 0.
+        tp = 0.
+        tn = 0.
+        for gt_val, pred_val in zip(gt, predicted):
+            if gt_val and not pred_val:
+                fn += 1
+            if not gt_val and pred_val:
+                fp += 1
+            if gt_val and pred_val:
+                tp += 1
+            if not gt_val and not pred_val:
+                tn += 1
+        loss = (fn * lr + fp) / len(gt)
+        try:
+            recall = tp / (tp + fn)
+            precision = tp / (tp + fp)
+            beta = beta
+            fbeta = (beta ** 2 + 1) * precision * recall / (recall + beta ** 2 * precision)
+        except ZeroDivisionError:
+            warnings.warn('ZeroDivisionError -> recall, precision, fbeta = 0., 0., 0')
+            recall, precision, fbeta = 0., 0., 0
+
+        return precision, recall, fbeta, loss, fn, fp
+
+    @staticmethod
+    def compute_tpr_tnr(gt, predicted):
+        tn, fp, fn, tp = confusion_matrix(gt, predicted).ravel()
+        TPR = tp / (tp + fn)  # sensitivity, recall, or true positive rate
+        TNR = tn / (tn + fp)  # specificity or true negative rate
+
+        return TPR, TNR
+
+
+def load_data(file_name, predicates):
+    path_dict = {
+        '100000_reviews_lemmatized.csv': '../../data/amazon-sentiment-dataset/',
+        'ohsumed_C04_C12_1grams.csv': '../../data/ohsumed_data/',
+        'ohsumed_C10_C23_1grams.csv': '../../data/ohsumed_data/',
+        'ohsumed_C14_C23_1grams.csv': '../../data/ohsumed_data/',
+    }
+    path = path_dict[file_name]
+    data = pd.read_csv(path + file_name)
+    X = data['tokens'].values
+    y_screening = data['Y'].values
     y_predicate = {}  # gt labels per predicate
     for pr in predicates:
-        y_predicate[pr] = np.append(df_screening_pos[pr].values,
-                                    df_screening_neg[pr].values)
-
-    # vectorize and transform text
-    vectorizer = TfidfVectorizer(lowercase=False, max_features=2000, ngram_range=(1, 1))
-    X = vectorizer.fit_transform(X).toarray()
-
-    # shuffle X, y in unison
-    np.random.seed(seed)
-    idx = np.random.permutation(y_screening.shape[0])
-    X, y_screening = X[idx], y_screening[idx]
-    for pr in predicates:
-        y_predicate[pr] = y_predicate[pr][idx]
+        y_predicate[pr] = data[pr].values
 
     return X, y_screening, y_predicate
 
@@ -107,49 +145,6 @@ def objective_aware_sampling(classifier, X, learners_, n_instances=1, **uncertai
 #     query_idx = multi_argmax(uncertainty_weighted, n_instances=n_instances)
 #
 #     return query_idx, X[query_idx]
-
-
-# screening metrics, aimed to obtain high recall
-class MetricsMixin:
-
-    @staticmethod
-    def compute_screening_metrics(gt, predicted, lr, beta):
-        '''
-        FP == False Inclusion
-        FN == False Exclusion
-        '''
-        fp = 0.
-        fn = 0.
-        tp = 0.
-        tn = 0.
-        for gt_val, pred_val in zip(gt, predicted):
-            if gt_val and not pred_val:
-                fn += 1
-            if not gt_val and pred_val:
-                fp += 1
-            if gt_val and pred_val:
-                tp += 1
-            if not gt_val and not pred_val:
-                tn += 1
-        loss = (fn * lr + fp) / len(gt)
-        try:
-            recall = tp / (tp + fn)
-            precision = tp / (tp + fp)
-            beta = beta
-            fbeta = (beta ** 2 + 1) * precision * recall / (recall + beta ** 2 * precision)
-        except ZeroDivisionError:
-            warnings.warn('ZeroDivisionError -> recall, precision, fbeta = 0., 0., 0')
-            recall, precision, fbeta = 0., 0., 0
-
-        return precision, recall, fbeta, loss, fn, fp
-
-    @staticmethod
-    def compute_tpr_tnr(gt, predicted):
-        tn, fp, fn, tp = confusion_matrix(gt, predicted).ravel()
-        TPR = tp / (tp + fn)  # sensitivity, recall, or true positive rate
-        TNR = tn / (tn + fp)  # specificity or true negative rate
-
-        return TPR, TNR
 
 
 # transfrom data from k-fold CV and print results in csv

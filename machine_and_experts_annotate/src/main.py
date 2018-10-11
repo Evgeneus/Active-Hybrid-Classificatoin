@@ -4,8 +4,8 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
 
-from machine_and_experts_annotate.src.utils import load_vectorize_data, transform_print, \
-    objective_aware_sampling, get_init_training_data_idx
+from machine_and_experts_annotate.src.utils import transform_print, \
+    objective_aware_sampling, get_init_training_data_idx, load_data, Vectorizer
 from machine_and_experts_annotate.src.active_learning import Learner, ScreeningActiveLearner
 
 seed = 123
@@ -13,22 +13,26 @@ seed = 123
 if __name__ == '__main__':
     predicates = ['is_negative', 'is_book']
     file_name = '100000_reviews_lemmatized.csv'
-    # load and transform data
-    X, y_screening, y_predicate = load_vectorize_data(file_name, predicates, seed)
+    # predicates = ['C04', 'C12']
+    # file_name = 'ohsumed_C04_C12_1grams.csv'
+    X, y_screening, y_predicate = load_data(file_name, predicates)
 
     data_df = []
     init_train_size = 20
     k = 5
-    skf = StratifiedKFold(n_splits=k, random_state=seed)
+    # split training-test datasets
+    skf = StratifiedKFold(n_splits=k, shuffle=True, random_state=seed)
     for train_idx, test_idx in skf.split(X, y_screening):
         print('-------------------------------')
-        # split training-test datasets
-        X_train, X_test = X[train_idx], X[test_idx]
+        vectorizer = Vectorizer(X[train_idx])
+        X_train = vectorizer.transform(X[train_idx])
+        X_test = vectorizer.transform(X[test_idx])
+
         y_screening_train, y_screening_test = y_screening[train_idx], y_screening[test_idx]
         y_predicate_train = {}
         for pr in predicates:
             y_predicate_train[pr] = y_predicate[pr][train_idx]
-        # creating balanced training data
+        # creating balanced init training data
         init_train_idx = get_init_training_data_idx(y_screening_train, y_predicate_train, init_train_size, seed)
 
         y_predicate_pool, y_predicate_train_init, y_predicate_test = {}, {}, {}
