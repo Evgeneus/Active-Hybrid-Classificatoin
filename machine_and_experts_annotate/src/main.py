@@ -51,8 +51,9 @@ if __name__ == '__main__':
         learners = {}
         for pr in predicates:  # setup predicate-based learners
             learner_params = {
-                'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced', random_state=seed)),
-                'undersampling_thr': 0.333,
+                'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced',
+                                                        C=0.1, random_state=seed)),
+                'undersampling_thr': 0.3,
                 'seed': seed,
                 'p_out': 0.5,
                 'sampling_strategy': objective_aware_sampling,

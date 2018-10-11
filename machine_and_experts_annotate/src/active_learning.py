@@ -205,16 +205,17 @@ class ScreeningActiveLearner(MetricsMixin):
         l.X_pool = np.delete(l.X_pool, np.concatenate((query_idx, query_idx_discard)), axis=0)
         l.y_pool = np.delete(l.y_pool, np.concatenate((query_idx, query_idx_discard)))
 
-        param_grid = {
-            'base_estimator__C': [0.01, 0.1, 1, 10],
-            'base_estimator__class_weight': ['balanced', {0: 1, 1: 2}, {0: 1, 1: 3}]
-        }
-        k = 5
-        grid = GridSearchCV(l.learner.estimator, cv=k, param_grid=param_grid,
-                            scoring='neg_log_loss', refit=True)
-
-        grid.fit(X, y)
-        l.learner.estimator = grid.best_estimator_
+        # # Uncomment for grid search of parameters
+        # param_grid = {
+        #     'base_estimator__C': [0.01, 0.1, 1, 10],
+        #     'base_estimator__class_weight': ['balanced', {0: 1, 1: 2}, {0: 1, 1: 3}]
+        # }
+        # k = 5
+        # grid = GridSearchCV(l.learner.estimator, cv=k, param_grid=param_grid,
+        #                     scoring='neg_log_loss', refit=True)
+        #
+        # grid.fit(X, y)
+        # l.learner.estimator = grid.best_estimator_
         l.learner.fit(X, y)
 
     def fit_meta(self, X, y):
