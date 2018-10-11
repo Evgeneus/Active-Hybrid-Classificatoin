@@ -13,10 +13,12 @@ from machine_and_experts_annotate.src.active_learning import Learner, ScreeningA
 seed = 123
 
 if __name__ == '__main__':
-    predicates = ['is_negative', 'is_book']
-    file_name = '100000_reviews_lemmatized.csv'
-    # predicates = ['C04', 'C12']
-    # file_name = 'ohsumed_C04_C12_1grams.csv'
+    # predicates = ['is_negative', 'is_book']
+    # file_name = '100000_reviews_lemmatized.csv'
+    predicates = ['C14', 'C23']
+    file_name = 'ohsumed_C14_C23_1grams.csv'
+    # predicates = ['oa_predicate', 'study_predicate']
+    # file_name = 'loneliness-dataset-2018.csv'
     X, y_screening, y_predicate = load_data(file_name, predicates)
 
     data_df = []
@@ -53,10 +55,10 @@ if __name__ == '__main__':
             learner_params = {
                 'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced',
                                                         C=0.1, random_state=seed)),
-                'undersampling_thr': 0.3,
+                'undersampling_thr': 0.03,
                 'seed': seed,
                 'p_out': 0.5,
-                'sampling_strategy': uncertainty_sampling,
+                'sampling_strategy': objective_aware_sampling,
             }
             learner = Learner(learner_params)
 
@@ -106,5 +108,5 @@ if __name__ == '__main__':
                                                        'fn_count', 'fp_count']))
 
     transform_print(data_df, learner_params['sampling_strategy'].__name__,
-                    predicates, 'screening_al_{}_{}XXX'.format(predicates[0], predicates[1]))
+                    predicates, 'screening_ohsumed_C14_C23_thr07')
     print('Done!')

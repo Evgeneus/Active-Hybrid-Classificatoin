@@ -1,12 +1,8 @@
 import operator
-from sklearn.metrics import fbeta_score
 import numpy as np
 from scipy import interpolate
 from modAL.models import ActiveLearner
-
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
-# from sklearn.metrics import fbeta_score, make_scorer
-
 from .utils import MetricsMixin
 
 

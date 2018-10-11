@@ -64,6 +64,7 @@ def load_data(file_name, predicates):
         'ohsumed_C04_C12_1grams.csv': '../../data/ohsumed_data/',
         'ohsumed_C10_C23_1grams.csv': '../../data/ohsumed_data/',
         'ohsumed_C14_C23_1grams.csv': '../../data/ohsumed_data/',
+        'loneliness-dataset-2018.csv': '../../data/loneliness-dataset-2018/'
     }
     path = path_dict[file_name]
     data = pd.read_csv(path + file_name)
