@@ -150,35 +150,39 @@ def objective_aware_sampling(classifier, X, learners_, n_instances=1, **uncertai
 #     return query_idx, X[query_idx]
 
 
-# transfrom data from k-fold CV and print results in csv
-def transform_print(data_df, sampl_strategy, predicates, file_name):
-    # compute mean and std, and median over k-fold cross validation results
+def transform_print(data_df, file_name):
+    # compute mean and std, and median over results
+    columns = ['num_items_queried', 'precision_mean',
+               'recall_mean', 'f_beta_mean', 'loss_mean',
+               'fn_count_mean', 'fp_count_mean']
     df_concat = pd.concat(data_df)
-    by_row_index = df_concat.groupby(df_concat.index)
-    df_means = by_row_index.mean()
-    df_std = by_row_index.std()
-    df_median = by_row_index.median()
+    strategies = df_concat['sampling_strategy'].unique()
+    df_to_print = pd.DataFrame([], columns=columns)
+    for strategy in strategies:
+        df_strategy = df_concat[df_concat['sampling_strategy'] == strategy]
+        by_row_index = df_strategy.groupby(df_strategy.index)
+        df_means = by_row_index.mean()
+        df_std = by_row_index.std()
+        df_median = by_row_index.median()
 
-    # form dataframe for printing out in csv
-    df_to_print = df_means
-    df_to_print.columns = ['num_items_queried', 'precision_mean',
-                           'recall_mean', 'f_beta_mean', 'loss_mean',
-                           'fn_count_mean', 'fp_count_mean']
+        # form dataframe for printing out in csv
+        df_to_print_ = df_means
+        df_to_print_.columns = columns
+        df_to_print_['precision_median'] = df_median['precision']
+        df_to_print_['recall_median'] = df_median['recall']
+        df_to_print_['f_beta_median'] = df_median['f_beta']
+        df_to_print_['loss_median'] = df_median['loss']
+        df_to_print_['fn_count_median'] = df_median['fn_count']
+        df_to_print_['fp_count_median'] = df_median['fp_count']
 
-    df_to_print['precision_median'] = df_median['precision']
-    df_to_print['recall_median'] = df_median['recall']
-    df_to_print['f_beta_median'] = df_median['f_beta']
-    df_to_print['loss_median'] = df_median['loss']
-    df_to_print['fn_count_median'] = df_median['fn_count']
-    df_to_print['fp_count_median'] = df_median['fp_count']
+        df_to_print_['precision_std'] = df_std['precision']
+        df_to_print_['recall_std'] = df_std['recall']
+        df_to_print_['f_beta_std'] = df_std['f_beta']
+        df_to_print_['loss_std'] = df_std['loss']
+        df_to_print_['fn_count_std'] = df_std['fn_count']
+        df_to_print_['fp_count_std'] = df_std['fp_count']
+        df_to_print_['sampling_strategy'] = strategy
 
-    df_to_print['precision_std'] = df_std['precision']
-    df_to_print['recall_std'] = df_std['recall']
-    df_to_print['f_beta_std'] = df_std['f_beta']
-    df_to_print['loss_std'] = df_std['loss']
-    df_to_print['fn_count_std'] = df_std['fn_count']
-    df_to_print['fp_count_std'] = df_std['fp_count']
+        df_to_print = df_to_print.append(df_to_print_)
 
-
-    df_to_print['sampling_strategy'] = sampl_strategy
     df_to_print.to_csv('../output/machines_and_experts/{}.csv'.format(file_name), index=False)

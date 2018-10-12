@@ -1,10 +1,14 @@
+from modAL.uncertainty import uncertainty_sampling
+from machine_and_experts_annotate.src.utils import random_sampling, objective_aware_sampling
+
 from machine_and_experts_annotate.src.experiment_handler import experiment_handler
 
 '''
     Parameters for active learners:
     'n_instances_query': num of instances for labeling for 1 query,
     'n_queries': num of active learning iterations,
-    'init_train_size': initial size of training dataset
+    'init_train_size': initial size of training dataset,
+    'sampling_strategies': list of active learning sampling strategies
     
     Classification parameters:
     'screening_out_threshold': threshold to classify a document OUT,
@@ -23,8 +27,9 @@ from machine_and_experts_annotate.src.experiment_handler import experiment_handl
 if __name__ == '__main__':
     # Parameters for active learners
     n_instances_query = 200
-    n_queries = 100
+    n_queries = 50
     init_train_size = 20
+    sampling_strategies = [objective_aware_sampling, uncertainty_sampling, random_sampling]
 
     # Classification parameters
     screening_out_threshold = 0.7
@@ -39,11 +44,11 @@ if __name__ == '__main__':
     file_name = 'ohsumed_C14_C23_1grams.csv'
     predicates = ['C14', 'C23']
 
-    # AMAZON DATASET
+    ## AMAZON DATASET
     # predicates = ['is_negative', 'is_book']
     # file_name = '100000_reviews_lemmatized.csv'
 
-    # LONELINESS SLR DATASET
+    # ## LONELINESS SLR DATASET
     # predicates = ['oa_predicate', 'study_predicate']
     # file_name = 'loneliness-dataset-2018.csv'
 
@@ -54,6 +59,7 @@ if __name__ == '__main__':
                        screening_out_threshold,
                        test_size,
                        beta, lr, k,
-                       predicates))
+                       predicates,
+                       sampling_strategies))
 
     print('Done!')
