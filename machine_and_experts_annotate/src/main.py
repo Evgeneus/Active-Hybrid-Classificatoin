@@ -1,112 +1,59 @@
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import StratifiedKFold
-from sklearn.svm import LinearSVC
-from sklearn.calibration import CalibratedClassifierCV
-from modAL.uncertainty import uncertainty_sampling
+from machine_and_experts_annotate.src.experiment_handler import experiment_handler
 
-from machine_and_experts_annotate.src.utils import transform_print, random_sampling, \
-    objective_aware_sampling, get_init_training_data_idx, load_data, Vectorizer
-from sklearn.linear_model import LogisticRegression
-from machine_and_experts_annotate.src.active_learning import Learner, ScreeningActiveLearner
+'''
+    Parameters for active learners:
+    'n_instances_query': num of instances for labeling for 1 query,
+    'n_queries': num of active learning iterations,
+    'init_train_size': initial size of training dataset
+    
+    Classification parameters:
+    'screening_out_threshold': threshold to classify a document OUT,
+    'beta': beta for F_beta score,
+    'lr': loss ration for the screening loss
+    
+    Experiment parameters:
+    'test_size': proportion of test size,
+    'k': reputation number of the whole experiment,
+    'file_name': file name of dataset,
+    'predicates': predicates will be used in experiment
+    
+'''
 
-seed = 123
 
 if __name__ == '__main__':
+    # Parameters for active learners
+    n_instances_query = 200
+    n_queries = 100
+    init_train_size = 20
+
+    # Classification parameters
+    screening_out_threshold = 0.7
+    beta = 3
+    lr = 5
+
+    # Experiment parameters
+    test_size = 0.4
+    k = 5
+
+    # OHUSMED DATASET
+    file_name = 'ohsumed_C14_C23_1grams.csv'
+    predicates = ['C14', 'C23']
+
+    # AMAZON DATASET
     # predicates = ['is_negative', 'is_book']
     # file_name = '100000_reviews_lemmatized.csv'
-    predicates = ['C14', 'C23']
-    file_name = 'ohsumed_C14_C23_1grams.csv'
+
+    # LONELINESS SLR DATASET
     # predicates = ['oa_predicate', 'study_predicate']
     # file_name = 'loneliness-dataset-2018.csv'
-    X, y_screening, y_predicate = load_data(file_name, predicates)
 
-    data_df = []
-    init_train_size = 20
-    k = 5
-    # split training-test datasets
-    skf = StratifiedKFold(n_splits=k, shuffle=True, random_state=seed)
-    for train_idx, test_idx in skf.split(X, y_screening):
-        print('-------------------------------')
-        vectorizer = Vectorizer(X[train_idx])
-        X_train = vectorizer.transform(X[train_idx])
-        X_test = vectorizer.transform(X[test_idx])
+    experiment_handler((file_name,
+                       n_instances_query,
+                       n_queries,
+                       init_train_size,
+                       screening_out_threshold,
+                       test_size,
+                       beta, lr, k,
+                       predicates))
 
-        y_screening_pool, y_screening_test = y_screening[train_idx], y_screening[test_idx]
-        y_predicate_pool = {}
-        for pr in predicates:
-            y_predicate_pool[pr] = y_predicate[pr][train_idx]
-
-        # creating balanced init training data
-        init_train_idx = get_init_training_data_idx(y_screening_pool, y_predicate_pool, init_train_size, seed)
-        y_predicate_train_init = {}
-        for pr in predicates:
-            y_predicate_train_init[pr] = y_predicate_pool[pr][init_train_idx]
-            y_predicate_pool[pr] = np.delete(y_predicate_pool[pr], init_train_idx)
-        y_screening_init = y_screening_pool[init_train_idx]
-        y_screening_pool = np.delete(y_screening_pool, init_train_idx)
-
-        X_train_init = X_train[init_train_idx]
-        X_pool = np.delete(X_train, init_train_idx, axis=0)
-
-        # dict of active learners per predicate
-        learners = {}
-        for pr in predicates:  # setup predicate-based learners
-            learner_params = {
-                'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced',
-                                                        C=0.1, random_state=seed)),
-                'undersampling_thr': 0.03,
-                'seed': seed,
-                'p_out': 0.5,
-                'sampling_strategy': objective_aware_sampling,
-            }
-            learner = Learner(learner_params)
-
-            y_test = y_predicate[pr][test_idx]
-            learner.setup_active_learner(X_train_init, y_predicate_train_init[pr],
-                                         X_pool, y_predicate_pool[pr], X_test, y_test)
-            learners[pr] = learner
-
-        screening_params = {
-            'n_instances_query': 200,  # num of instances for labeling for 1 query
-            'seed': seed,
-            'p_out': 0.7,
-            'lr': 5,
-            'beta': 3,
-            'learners': learners
-        }
-        SAL = ScreeningActiveLearner(screening_params)
-        # SAL.init_stat()  # initialize statistic for predicates, uncomment if use predicate selection feature
-        n_queries = 50
-        num_items_queried = init_train_size*len(predicates)
-        data = []
-
-        for i in range(n_queries):
-            # SAL.update_stat() # uncomment if use predicate selection feature
-            pr = SAL.select_predicate(i)
-            query_idx, query_idx_discard = SAL.query(pr)
-            SAL.teach(pr, query_idx, query_idx_discard)
-            # SAL.fit_meta(X_train_init, y_screening_init)
-
-            predicted = SAL.predict(X_test)
-            # if only one predicate -> keep y_test as predicate's y_test
-            if len(predicates) == 1:
-                y_test_ = y_predicate[pr][test_idx]
-            else:
-                y_test_ = y_screening_test
-            metrics = SAL.compute_screening_metrics(y_test_, predicted, SAL.lr, SAL.beta)
-            pre, rec, fbeta, loss, fn_count, fp_count = metrics
-            num_items_queried += SAL.n_instances_query
-            data.append([num_items_queried, pre, rec, fbeta, loss, fn_count, fp_count])
-
-            print('query no. {}: loss: {:1.3f}, fbeta: {:1.3f}, '
-                          'recall: {:1.3f}, precisoin: {:1.3f}'
-                  .format(i + 1, loss, fbeta, rec, pre))
-            data_df.append(pd.DataFrame(data, columns=['num_items_queried',
-                                                       'precision', 'recall',
-                                                       'f_beta', 'loss',
-                                                       'fn_count', 'fp_count']))
-
-    transform_print(data_df, learner_params['sampling_strategy'].__name__,
-                    predicates, 'screening_ohsumed_C14_C23_thr07')
     print('Done!')

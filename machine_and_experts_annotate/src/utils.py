@@ -7,12 +7,14 @@ from sklearn.metrics import confusion_matrix
 
 
 class Vectorizer:
-    def __init__(self, X):
+    def __init__(self):
         self.vectorizer = TfidfVectorizer(lowercase=False, max_features=2000, ngram_range=(1, 2))
-        self.vectorizer.fit(X)
 
     def transform(self, X):
         return self.vectorizer.transform(X).toarray()
+
+    def fit_transform(self, X):
+        return self.vectorizer.fit_transform(X).toarray()
 
 
 # screening metrics, aimed to obtain high recall
