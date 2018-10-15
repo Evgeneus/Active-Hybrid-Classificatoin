@@ -19,7 +19,7 @@ def experiment_handler(experiment_params):
     X, y_screening, y_predicate = load_data(file_name, predicates)
     data_df = []
     # split training-test datasets
-    for _ in range(k):
+    for experiment_id in range(k):
         train_idx, test_idx, _, _ = train_test_split(list(range(X.shape[0])), y_screening,
                                                      test_size=test_size, stratify=y_screening)
         print('-------------------------------')
@@ -94,16 +94,17 @@ def experiment_handler(experiment_params):
                 metrics = SAL.compute_screening_metrics(y_test_, predicted, SAL.lr, SAL.beta)
                 pre, rec, fbeta, loss, fn_count, fp_count = metrics
                 num_items_queried += SAL.n_instances_query
-                data.append([num_items_queried, pre, rec, fbeta, loss, fn_count, fp_count,
+                data.append([experiment_id, num_items_queried, pre, rec, fbeta, loss, fn_count, fp_count,
                              learner_params['sampling_strategy'].__name__])
 
                 print('query no. {}: loss: {:1.3f}, fbeta: {:1.3f}, '
                       'recall: {:1.3f}, precisoin: {:1.3f}'
                       .format(i + 1, loss, fbeta, rec, pre))
-                data_df.append(pd.DataFrame(data, columns=['num_items_queried',
+                data_df.append(pd.DataFrame(data, columns=['experiment_id', 'num_items_queried',
                                                            'precision', 'recall',
                                                            'f_beta', 'loss',
                                                            'fn_count', 'fp_count',
                                                            'sampling_strategy']))
 
-    transform_print(data_df, file_name[:-4]+'_experiment_k{}_ninstq_{}'.format(k, n_instances_query))
+    pd.concat(data_df).to_csv('../output/machines_and_experts/{}_.csv'.format(file_name), index=False)
+    # transform_print(data_df, file_name[:-4]+'_experiment_k{}_ninstq_{}'.format(k, n_instances_query))
