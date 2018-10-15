@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     # Experiment parameters
     test_size = 0.4
-    k = 5
+    k = 50
 
     # OHUSMED DATASET
     file_name = 'ohsumed_C14_C23_1grams.csv'

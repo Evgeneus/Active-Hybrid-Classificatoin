@@ -106,4 +106,4 @@ def experiment_handler(experiment_params):
                                                            'fn_count', 'fp_count',
                                                            'sampling_strategy']))
 
-    transform_print(data_df, file_name[:-4]+'_experiment')
+    transform_print(data_df, file_name[:-4]+'_experiment_k{}_ninstq_{}'.format(k, n_instances_query))
