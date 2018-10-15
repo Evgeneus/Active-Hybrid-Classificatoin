@@ -18,7 +18,7 @@ from machine_and_experts_annotate.src.experiment_handler import experiment_handl
     Experiment parameters:
     'test_size': proportion of test size,
     'k': reputation number of the whole experiment,
-    'file_name': file name of dataset,
+    'dataset_file_name': file name of dataset,
     'predicates': predicates will be used in experiment
     
 '''
@@ -41,18 +41,18 @@ if __name__ == '__main__':
     k = 50
 
     # OHUSMED DATASET
-    file_name = 'ohsumed_C14_C23_1grams.csv'
+    dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
     predicates = ['C14', 'C23']
 
     ## AMAZON DATASET
     # predicates = ['is_negative', 'is_book']
-    # file_name = '100000_reviews_lemmatized.csv'
+    # dataset_file_name = '100000_reviews_lemmatized.csv'
 
     # ## LONELINESS SLR DATASET
     # predicates = ['oa_predicate', 'study_predicate']
-    # file_name = 'loneliness-dataset-2018.csv'
+    # dataset_file_name = 'loneliness-dataset-2018.csv'
 
-    experiment_handler((file_name,
+    experiment_handler((dataset_file_name,
                        n_instances_query,
                        n_queries,
                        init_train_size,
