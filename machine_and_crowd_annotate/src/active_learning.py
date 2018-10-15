@@ -3,7 +3,7 @@ import numpy as np
 from scipy import interpolate
 from modAL.models import ActiveLearner
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
-from .utils import MetricsMixin
+from .utils import MetricsMixin, CrowdSimulator
 
 
 class ActiveLearner(ActiveLearner):
@@ -162,7 +162,7 @@ class Learner(MetricsMixin):
 
 
 # class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin):  # uncomment if use predicate selection feature
-class ScreeningActiveLearner(MetricsMixin):
+class ScreeningActiveLearner(MetricsMixin, CrowdSimulator):
 
     def __init__(self, params):
         self.n_instances_query = params['n_instances_query']
@@ -172,6 +172,9 @@ class ScreeningActiveLearner(MetricsMixin):
         self.beta = params['beta']
         self.learners = params['learners']
         self.predicates = list(self.learners.keys())
+        # parameters for crowd simulation
+        self.crowd_acc = params['crowd_acc']
+        self.crowd_votes_per_item = params['crowd_votes_per_item']
 
     def select_predicate(self, param):
         if len(self.predicates) == 1:
@@ -196,7 +199,12 @@ class ScreeningActiveLearner(MetricsMixin):
     def teach(self, predicate, query_idx, query_idx_discard):
         l = self.learners[predicate]
         X = np.concatenate((l.learner.X_training, l.X_pool[query_idx]))
-        y = np.concatenate((l.learner.y_training, l.y_pool[query_idx]))
+        # crowdsource items
+        y_crowdsourced = self.crowdsource_items(l.y_pool[query_idx],
+                                                self.crowd_acc[predicate],
+                                                self.crowd_votes_per_item)
+
+        y = np.concatenate((l.learner.y_training, y_crowdsourced))
         # remove queried instance from pool
         l.X_pool = np.delete(l.X_pool, np.concatenate((query_idx, query_idx_discard)), axis=0)
         l.y_pool = np.delete(l.y_pool, np.concatenate((query_idx, query_idx_discard)))

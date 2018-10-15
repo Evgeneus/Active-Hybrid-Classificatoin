@@ -17,6 +17,29 @@ class Vectorizer:
         return self.vectorizer.fit_transform(X).toarray()
 
 
+class CrowdSimulator:
+
+    @staticmethod
+    def crowdsource_items(gt_items, crowd_acc, n):
+        '''
+        :param gt_items: list of ground truth values fo items to crowdsource
+        :param crowd_acc: crowd accuracy range on predicate given
+        :param n: n crowd votes per predicate
+        :param predicate: predicate name for
+        :return: aggregated crwodsourced label on items
+        '''
+        crodsourced_items = []
+        for gt in gt_items:
+            votes_per_item = []
+            for _ in range(n):
+                worker_acc = random.uniform(crowd_acc[0], crowd_acc[1])
+                worker_vote = np.random.binomial(1, worker_acc if gt == 1 else 1 - worker_acc)
+                votes_per_item.append(worker_vote)
+            item_label = 1 if votes_per_item.count(1) >= n // 2 else 0
+            crodsourced_items.append(item_label)
+        return crodsourced_items
+
+
 # screening metrics, aimed to obtain high recall
 class MetricsMixin:
 

@@ -13,7 +13,9 @@ def experiment_handler(experiment_params):
     n_queries, init_train_size, \
     screening_out_threshold, \
     test_size, beta, lr, k, \
-    predicates, sampling_strategies = experiment_params
+    predicates, sampling_strategies, \
+    crowd_acc,    \
+    crowd_votes_per_item = experiment_params
     seed = 123  # seed for Training ML algorithms
 
     X, y_screening, y_predicate = load_data(file_name, predicates)
@@ -71,7 +73,9 @@ def experiment_handler(experiment_params):
                 'p_out': screening_out_threshold,
                 'lr': lr,
                 'beta': beta,
-                'learners': learners
+                'learners': learners,
+                'crowd_acc': crowd_acc,
+                'crowd_votes_per_item': crowd_votes_per_item
             }
             SAL = ScreeningActiveLearner(screening_params)
             # SAL.init_stat()  # initialize statistic for predicates, uncomment if use predicate selection feature
@@ -106,4 +110,4 @@ def experiment_handler(experiment_params):
                                                            'fn_count', 'fp_count',
                                                            'sampling_strategy']))
 
-    transform_print(data_df, file_name[:-4]+'_experiment_k{}_ninstq_{}'.format(k, n_instances_query))
+    transform_print(data_df, file_name[:-4]+'_crowd_experiment_k{}_ninstq_{}'.format(k, n_instances_query))

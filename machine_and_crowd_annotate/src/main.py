@@ -48,9 +48,14 @@ if __name__ == '__main__':
     # predicates = ['is_negative', 'is_book']
     # file_name = '100000_reviews_lemmatized.csv'
 
-    # ## LONELINESS SLR DATASET
+    ## LONELINESS SLR DATASET
     # predicates = ['oa_predicate', 'study_predicate']
     # file_name = 'loneliness-dataset-2018.csv'
+
+    # parameters for crowdsourcing simulation
+    crowd_acc = {predicates[0]: [0.7, 1.],
+                 predicates[1]: [0.7, 1.]}
+    crowd_votes_per_item = 5
 
     experiment_handler((file_name,
                        n_instances_query,
@@ -60,6 +65,8 @@ if __name__ == '__main__':
                        test_size,
                        beta, lr, k,
                        predicates,
-                       sampling_strategies))
+                       sampling_strategies,
+                       crowd_acc,
+                       crowd_votes_per_item))
 
     print('Done!')
