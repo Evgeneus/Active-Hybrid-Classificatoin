@@ -18,7 +18,7 @@ from machine_and_crowd_annotate.src.experiment_handler import experiment_handler
     Experiment parameters:
     'test_size': proportion of test size,
     'k': reputation number of the whole experiment,
-    'file_name': file name of dataset,
+    'dataset_file_name ': file name of dataset,
     'predicates': predicates will be used in experiment
     
 '''
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     k = 50
 
     # OHUSMED DATASET
-    file_name = 'ohsumed_C14_C23_1grams.csv'
+    dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
     predicates = ['C14', 'C23']
 
     ## AMAZON DATASET
@@ -57,7 +57,7 @@ if __name__ == '__main__':
                  predicates[1]: [0.7, 1.]}
     crowd_votes_per_item = 5
 
-    experiment_handler((file_name,
+    experiment_handler((dataset_file_name ,
                        n_instances_query,
                        n_queries,
                        init_train_size,
