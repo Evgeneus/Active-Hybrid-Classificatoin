@@ -1,7 +1,7 @@
 from modAL.uncertainty import uncertainty_sampling
-from machine_and_crowd_annotate.src.utils import random_sampling, objective_aware_sampling
+from adaptive_machine_and_crowd.src.utils import random_sampling, objective_aware_sampling
 
-from machine_and_crowd_annotate.src.experiment_handler import experiment_handler
+from adaptive_machine_and_crowd.src.experiment_handler import experiment_handler
 
 '''
     Parameters for active learners:
@@ -44,20 +44,20 @@ if __name__ == '__main__':
     dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
     predicates = ['C14', 'C23']
 
-    ## AMAZON DATASET
+    # # AMAZON DATASET
     # predicates = ['is_negative', 'is_book']
-    # file_name = '100000_reviews_lemmatized.csv'
+    # dataset_file_name = '100000_reviews_lemmatized.csv'
 
-    ## LONELINESS SLR DATASET
+    # # LONELINESS SLR DATASET
     # predicates = ['oa_predicate', 'study_predicate']
-    # file_name = 'loneliness-dataset-2018.csv'
+    # dataset_file_name = 'loneliness-dataset-2018.csv'
 
     # parameters for crowdsourcing simulation
     crowd_acc = {predicates[0]: [0.7, 1.],
                  predicates[1]: [0.7, 1.]}
     crowd_votes_per_item = 5
 
-    experiment_handler((dataset_file_name ,
+    experiment_handler((dataset_file_name,
                        n_instances_query,
                        n_queries,
                        init_train_size,
