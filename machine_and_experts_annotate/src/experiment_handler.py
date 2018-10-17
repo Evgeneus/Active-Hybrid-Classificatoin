@@ -100,11 +100,11 @@ def experiment_handler(experiment_params):
                 print('query no. {}: loss: {:1.3f}, fbeta: {:1.3f}, '
                       'recall: {:1.3f}, precisoin: {:1.3f}'
                       .format(i + 1, loss, fbeta, rec, pre))
-                data_df.append(pd.DataFrame(data, columns=['experiment_id', 'num_items_queried',
-                                                           'precision', 'recall',
-                                                           'f_beta', 'loss',
-                                                           'fn_count', 'fp_count',
-                                                           'sampling_strategy']))
+            data_df.append(pd.DataFrame(data, columns=['experiment_id', 'num_items_queried',
+                                                       'precision', 'recall',
+                                                       'f_beta', 'loss',
+                                                       'fn_count', 'fp_count',
+                                                       'sampling_strategy']))
 
     pd.concat(data_df).to_csv('../output/machines_and_experts/{}_.csv'.format(file_name), index=False)
     # transform_print(data_df, file_name[:-4]+'_experiment_k{}_ninstq_{}'.format(k, n_instances_query))
