@@ -16,7 +16,6 @@ def experiment_handler(experiment_params):
     predicates, sampling_strategies, \
     crowd_acc,    \
     crowd_votes_per_item = experiment_params
-    seed = 123  # seed for Training ML algorithms
 
     X, y_screening, y_predicate = load_data(file_name, predicates)
     data_df = []
@@ -37,27 +36,20 @@ def experiment_handler(experiment_params):
                 y_predicate_pool[pr] = y_predicate[pr][train_idx]
 
             # creating balanced init training data
-            init_train_idx = get_init_training_data_idx(y_screening_pool, y_predicate_pool, init_train_size, seed)
+            init_train_idx = get_init_training_data_idx(y_screening_pool, y_predicate_pool, init_train_size)
             y_predicate_train_init = {}
+            X_train_init = X_train[init_train_idx]
+            X_pool = np.delete(X_train, init_train_idx, axis=0)
             for pr in predicates:
                 y_predicate_train_init[pr] = y_predicate_pool[pr][init_train_idx]
                 y_predicate_pool[pr] = np.delete(y_predicate_pool[pr], init_train_idx)
-            # UNCOMMENT IF NEED TO USE
-            # y_screening_init = y_screening_pool[init_train_idx]
-            # y_screening_pool = np.delete(y_screening_pool, init_train_idx)
-
-
-            X_train_init = X_train[init_train_idx]
-            X_pool = np.delete(X_train, init_train_idx, axis=0)
 
             # dict of active learners per predicate
             learners = {}
             for pr in predicates:  # setup predicate-based learners
                 learner_params = {
                     'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced',
-                                                            C=0.1, random_state=seed)),
-                    'undersampling_thr': 0.00,
-                    'seed': seed,
+                                                            C=0.1)),
                     'p_out': 0.5,
                     'sampling_strategy': sampling_strategy,
                 }
@@ -70,7 +62,6 @@ def experiment_handler(experiment_params):
 
             screening_params = {
                 'n_instances_query': n_instances_query,  # num of instances for labeling for 1 query
-                'seed': seed,
                 'p_out': screening_out_threshold,
                 'lr': lr,
                 'beta': beta,
@@ -86,35 +77,41 @@ def experiment_handler(experiment_params):
             for i in range(n_queries):
                 SAL.update_stat()  # uncomment if use predicate selection feature
                 pr = SAL.select_predicate(i)
-                query_idx, query_idx_discard = SAL.query(pr)
-                SAL.teach(pr, query_idx, query_idx_discard)
-                # SAL.fit_meta(X_train_init, y_screening_init)
+                query_idx= SAL.query(pr)
+                SAL.teach(pr, query_idx)
 
-                predicted = SAL.predict(X_test)
                 # if only one predicate -> keep y_test as predicate's y_test
                 if len(predicates) == 1:
                     y_test_ = y_predicate[pr][test_idx]
                 else:
                     y_test_ = y_screening_test
+                predicted = SAL.predict(X_test)
                 metrics = SAL.compute_screening_metrics(y_test_, predicted, SAL.lr, SAL.beta)
                 pre, rec, fbeta, loss, fn_count, fp_count = metrics
                 num_items_queried += SAL.n_instances_query
 
-                data.append([experiment_id, num_items_queried, pre, rec, fbeta, loss, fn_count, fp_count,
-                             learner_params['sampling_strategy'].__name__] +
-                            [SAL.stat[pred]['f_beta'][-1] for pred in predicates])
 
-                print('query no. {}: loss: {:1.3f}, fbeta: {:1.3f}, '
-                      'recall: {:1.3f}, precisoin: {:1.3f}'
-                      .format(i + 1, loss, fbeta, rec, pre))
-            data_df.append(pd.DataFrame(data, columns=['experiment_id',
-                                                       'num_items_queried',
-                                                       'precision', 'recall',
-                                                       'f_beta', 'loss',
-                                                       'fn_count', 'fp_count',
-                                                       'sampling_strategy'] +
-                                                       ['estimated_f_beta_' + pred for pred in predicates]))
+                print('query no. {}, pr: {}, f_3 on val: {:1.2f}, f_3 test: {:1.2f}'.
+                      format(i + 1, pr, SAL.stat[pr]['f_beta'][-1], SAL.stat[pr]['f_beta_on_test'][-1]))
+                print('-------------------------')
 
-    pd.concat(data_df).to_csv('../output/adaptive_machines_and_crowd/{}_adaptive_experiment_k{}_ninstq_{}.csv'.
-                              format(file_name, k, n_instances_query), index=False)
+            #     data.append([experiment_id, num_items_queried, pre, rec, fbeta, loss, fn_count, fp_count,
+            #                  learner_params['sampling_strategy'].__name__] +
+            #                 [SAL.stat[pred]['f_beta'][-1] for pred in predicates] +
+            #                 [SAL.stat[pred]['f_beta_on_test'][-1] for pred in predicates])
+            #
+            #     print('query no. {}: loss: {:1.3f}, fbeta: {:1.3f}, '
+            #           'recall: {:1.3f}, precisoin: {:1.3f}'
+            #           .format(i + 1, loss, fbeta, rec, pre))
+            # data_df.append(pd.DataFrame(data, columns=['experiment_id',
+            #                                            'num_items_queried',
+            #                                            'precision', 'recall',
+            #                                            'f_beta', 'loss',
+            #                                            'fn_count', 'fp_count',
+            #                                            'sampling_strategy'] +
+            #                                            ['estimated_f_beta_' + pred for pred in predicates] +
+            #                                            ['f_beta_on_test_' + pred for pred in predicates]))
+
+    # pd.concat(data_df).to_csv('../output/adaptive_machines_and_crowd/{}_adaptive_experiment_k{}_ninstq_{}_mix.csv'.
+    #                           format(file_name, k, n_instances_query), index=False)
     # transform_print(data_df, file_name[:-4]+'_adaptive_experiment_k{}_ninstq_{}'.format(k, n_instances_query))

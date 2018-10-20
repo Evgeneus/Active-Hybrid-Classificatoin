@@ -102,13 +102,12 @@ def load_data(file_name, predicates):
     return X, y_screening, y_predicate
 
 
-def get_init_training_data_idx(y_screening, y_predicate_train, init_train_size, seed):
+def get_init_training_data_idx(y_screening, y_predicate_train, init_train_size):
    # initial training data
    pos_idx_all = (y_screening == 1).nonzero()[0]
    # all predicates are negative
    neg_idx_all = (sum(list(y_predicate_train.values())) == 0).nonzero()[0]
    # randomly select initial balanced training dataset
-   np.random.seed(seed)
    train_idx = np.concatenate([np.random.choice(pos_idx_all, init_train_size // 2, replace=False),
                                np.random.choice(neg_idx_all, init_train_size // 2, replace=False)])
 
@@ -116,17 +115,8 @@ def get_init_training_data_idx(y_screening, y_predicate_train, init_train_size, 
 
 
 # random sampling strategy for modAL
-def random_sampling(_, X, n_instances=1, seed=123):
-    random.seed(seed)
+def random_sampling(_, X, n_instances=1):
     query_idx = np.array(random.sample(range(X.shape[0]), n_instances))
-
-    return query_idx, X[query_idx]
-
-
-# positive class certainty sampling strategy for modAL
-def positive_certainty_sampling(classifier, X, n_instances=1, **predict_proba_kwargs):
-    prob_in = classifier.predict_proba(X, **predict_proba_kwargs)[:, 1]
-    query_idx = np.argpartition(prob_in, -n_instances)[-n_instances:]
 
     return query_idx, X[query_idx]
 
@@ -144,6 +134,28 @@ def objective_aware_sampling(classifier, X, learners_, n_instances=1, **uncertai
         uncertainty_weighted = uncertainty
 
     query_idx = multi_argmax(uncertainty_weighted, n_instances=n_instances)
+
+    return query_idx, X[query_idx]
+
+
+# sampling takes into account conjunctive expression of predicates
+def mix_sampling(classifier, X, learners_, n_instances=1, **uncertainty_measure_kwargs):
+    from modAL.uncertainty import classifier_uncertainty, multi_argmax
+    epsilon = 0.5
+    uncertainty = classifier_uncertainty(classifier, X, **uncertainty_measure_kwargs)
+
+    if np.random.binomial(1, epsilon):
+        query_idx = np.array(random.sample(range(0, X.shape[0]-1), n_instances))
+    else:
+        l_prob_in = np.ones(X.shape[0])
+        if learners_:
+            for l in learners_.values():
+                l_prob_in *= l.learner.predict_proba(X)[:, 1]
+            uncertainty_weighted = l_prob_in * uncertainty
+        else:
+            uncertainty_weighted = uncertainty
+
+        query_idx = multi_argmax(uncertainty_weighted, n_instances=n_instances)
 
     return query_idx, X[query_idx]
 

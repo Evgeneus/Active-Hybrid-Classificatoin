@@ -1,5 +1,5 @@
 from modAL.uncertainty import uncertainty_sampling
-from adaptive_machine_and_crowd.src.utils import random_sampling, objective_aware_sampling
+from adaptive_machine_and_crowd.src.utils import random_sampling, objective_aware_sampling, mix_sampling
 
 from adaptive_machine_and_crowd.src.experiment_handler import experiment_handler
 
@@ -27,7 +27,7 @@ from adaptive_machine_and_crowd.src.experiment_handler import experiment_handler
 if __name__ == '__main__':
     # Parameters for active learners
     n_instances_query = 200
-    n_queries = 50
+    n_queries = 100
     init_train_size = 20
     sampling_strategies = [objective_aware_sampling, uncertainty_sampling, random_sampling]
 
@@ -40,21 +40,24 @@ if __name__ == '__main__':
     test_size = 0.4
     k = 50
 
-    # OHUSMED DATASET
-    dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
-    predicates = ['C14', 'C23']
+    # # OHUSMED DATASET
+    # dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
+    # predicates = ['C14', 'C23']
+    # predicates = ['C14']
 
-    # # AMAZON DATASET
-    # predicates = ['is_negative', 'is_book']
-    # dataset_file_name = '100000_reviews_lemmatized.csv'
+    # AMAZON DATASET
+    predicates = ['is_negative', 'is_book']
+    dataset_file_name = '100000_reviews_lemmatized.csv'
 
-    # # LONELINESS SLR DATASET
+    # LONELINESS SLR DATASET
     # predicates = ['oa_predicate', 'study_predicate']
+    # predicates = ['oa_predicate']
     # dataset_file_name = 'loneliness-dataset-2018.csv'
 
-    # parameters for crowdsourcing simulation
+    # # parameters for crowdsourcing simulation
     crowd_acc = {predicates[0]: [0.7, 1.],
                  predicates[1]: [0.7, 1.]}
+
     crowd_votes_per_item = 5
 
     experiment_handler((dataset_file_name,

@@ -10,7 +10,7 @@ from .utils import MetricsMixin, CrowdSimulator
 class ActiveLearner(ActiveLearner):
 
     def query(self, X, learners_=None, **query_kwargs):
-        if self.query_strategy.__name__ not in ['objective_aware_sampling']:
+        if self.query_strategy.__name__ not in ['mix_sampling', 'objective_aware_sampling']:
             query_idx, query_instances = self.query_strategy(self, X, **query_kwargs)
         else:
             query_idx, query_instances = self.query_strategy(self, X, learners_, **query_kwargs)
@@ -28,18 +28,9 @@ class ChoosePredicateMixin:
                 'num_items_queried': [],
                 'tpr': [],
                 'tnr': [],
-                'f_beta': []
+                'f_beta': [],
+                'f_beta_on_test': []
             }
-
-    # def select_predicate(self, param):
-    #     self.update_stat()
-    #
-    #     num_items_queried_all = (param + 1) * self.n_instances_query
-    #     if num_items_queried_all / len(self.predicates) < 100:
-    #         return self.predicates[param % 2]
-    #     else:
-    #         raise ValueError('More than 2 predicates not supported yet. Change select_predicate method.')
-
 
     # def _select_predicate(self, extrapolated_val):
     #     predicate_loss = (None, float('inf'))
@@ -62,14 +53,14 @@ class ChoosePredicateMixin:
 
             l = self.learners[predicate]
             X, y = l.learner.X_training, l.learner.y_training
-
             tpr_list, tnr_list, f_beta_list = [], [], []
             k = 5
-            skf = StratifiedKFold(n_splits=k, random_state=self.seed)
-            for train_idx, val_idx in skf.split(X, y):
+            skf = StratifiedKFold(n_splits=k)
+            for train_idx, val_idx in skf.split(np.empty(y.shape[0]), y):
                 X_train, X_val = X[train_idx], X[val_idx]
                 y_train, y_val = y[train_idx], y[val_idx]
-                clf = l.learner.fit(X_train, y_train)
+                clf = l.learner
+                clf.fit(X_train, y_train)
                 f_beta_list.append(fbeta_score(y_val, clf.predict(X_val), beta=self.beta, average='binary'))
                 tpr, tnr = self.compute_tpr_tnr(y_val, clf.predict(X_val))
                 tpr_list.append(tpr)
@@ -82,10 +73,11 @@ class ChoosePredicateMixin:
             except IndexError:
                 num_items_queried_prev = 0
             self.stat[predicate]['num_items_queried']\
-                .append(num_items_queried_prev + self.n_instances_query)
+                .append((num_items_queried_prev + self.n_instances_query) // 2)  # devide by 2 due to predicate selection method
             self.stat[predicate]['tpr'].append(tpr_mean)
             self.stat[predicate]['tnr'].append(tnr_mean)
             self.stat[predicate]['f_beta'].append(f_beta_mean)
+            self.stat[predicate]['f_beta_on_test'].append(fbeta_score(l.y_test, clf.predict(l.X_test), beta=self.beta, average='binary'))
 
     # def extrapolate(self):
     #     extrapolated_val = {}
@@ -121,9 +113,6 @@ class Learner(MetricsMixin):
 
     def __init__(self, params):
         self.clf = params['clf']
-        self.undersampling_thr = params['undersampling_thr']
-        self.seed = params['seed']
-        # self.init_train_size = params['init_train_size']
         self.sampling_strategy = params['sampling_strategy']
         self.p_out = 0.5
 
@@ -141,34 +130,11 @@ class Learner(MetricsMixin):
             query_strategy=self.sampling_strategy
         )
 
-    def undersample(self, query_idx):
-        pos_y_num = sum(self.learner.y_training)
-        train_y_num = len(self.learner.y_training)
 
-        pos_y_idx = (self.y_pool[query_idx] == 1).nonzero()[0]  # add all positive items from queried items
-        query_idx_new = list(query_idx[pos_y_idx])                        # delete positive idx from queried query_idx
-        query_idx_discard = []
-        query_neg_idx = np.delete(query_idx, pos_y_idx)
-
-        pos_y_num += len(pos_y_idx)
-        train_y_num += len(pos_y_idx)
-        for y_neg_idx in query_neg_idx:
-            # compute current proportion of positive items in training dataset
-            if pos_y_num / train_y_num > self.undersampling_thr:
-                query_idx_new.append(y_neg_idx)
-                train_y_num += 1
-            else:
-                query_idx_discard.append(y_neg_idx)
-
-        return query_idx_new, query_idx_discard
-
-
-# class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin):  # uncomment if use predicate selection feature
-class ScreeningActiveLearner(MetricsMixin, CrowdSimulator, ChoosePredicateMixin):
+class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin):
 
     def __init__(self, params):
         self.n_instances_query = params['n_instances_query']
-        self.seed = params['seed']
         self.p_out = params['p_out']
         self.lr = params['lr']
         self.beta = params['beta']
@@ -192,25 +158,23 @@ class ScreeningActiveLearner(MetricsMixin, CrowdSimulator, ChoosePredicateMixin)
         learners_ = {l_: self.learners[l_] for l_ in self.learners if l_ not in [predicate]}
         query_idx, _ = l.learner.query(l.X_pool,
                                        n_instances=self.n_instances_query,
-                                       learners_=learners_
-                                       )
-        query_idx_new, query_idx_discard = l.undersample(query_idx)  # undersample the majority class
+                                       learners_=learners_)
+        return query_idx
 
-        return query_idx_new, query_idx_discard
-
-    def teach(self, predicate, query_idx, query_idx_discard):
+    def teach(self, predicate, query_idx):
         l = self.learners[predicate]
-        X = np.concatenate((l.learner.X_training, l.X_pool[query_idx]))
+        l.learner.teach(l.X_pool[query_idx], l.y_pool[query_idx])
+
         # crowdsource items
         # y_crowdsourced = self.crowdsource_items(l.y_pool[query_idx],
         #                                         self.crowd_acc[predicate],
         #                                         self.crowd_votes_per_item)
         #
         # y = np.concatenate((l.learner.y_training, y_crowdsourced))
+
         # remove queried instance from pool
-        y = np.concatenate((l.learner.y_training, l.y_pool[query_idx]))
-        l.X_pool = np.delete(l.X_pool, np.concatenate((query_idx, query_idx_discard)), axis=0)
-        l.y_pool = np.delete(l.y_pool, np.concatenate((query_idx, query_idx_discard)))
+        l.X_pool = np.delete(l.X_pool, query_idx, axis=0)
+        l.y_pool = np.delete(l.y_pool, query_idx)
 
         # # Uncomment for grid search of parameters
         # param_grid = {
@@ -223,22 +187,7 @@ class ScreeningActiveLearner(MetricsMixin, CrowdSimulator, ChoosePredicateMixin)
         #
         # grid.fit(X, y)
         # l.learner.estimator = grid.best_estimator_
-        l.learner.fit(X, y)
-
-    def fit_meta(self, X, y):
-        p_out_values = np.arange(0.5, 0.95, 0.02)
-        grid_p_out = dict.fromkeys(p_out_values, 0.)
-        for p_out in p_out_values:
-            self.p_out = p_out
-            predicted = self.predict(X)
-            # grid_p_out[p_out] = fbeta_score(y, predicted, self.beta)  # uncomment if optimize for f_beta
-            # uncomment if optimize for loss
-            _, _, _, grid_p_out[p_out] = self.compute_screening_metrics(y, predicted, self.lr, self.beta)
-
-        # uncomment if optimize for f_beta
-        # self.p_out = max(grid_p_out.items(), key=operator.itemgetter(1))[0]
-        self.p_out = min(grid_p_out.items(), key=operator.itemgetter(1))[0]
-        print('threshold: ', self.p_out)
+        # l.learner.fit(X, y)
 
     def predict_proba(self, X):
         proba_in = np.ones(X.shape[0])
