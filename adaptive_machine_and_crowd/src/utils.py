@@ -23,7 +23,7 @@ class Vectorizer():
 class CrowdSimulator:
 
     @staticmethod
-    def crowdsource_items(gt_items, crowd_acc, n):
+    def crowdsource_items(item_ids, gt_items, predicate, crowd_acc, n, item_crowd_counts):
         '''
         :param gt_items: list of ground truth values fo items to crowdsource
         :param crowd_acc: crowd accuracy range on predicate given
@@ -32,13 +32,18 @@ class CrowdSimulator:
         :return: aggregated crwodsourced label on items
         '''
         crodsourced_items = []
-        for gt in gt_items:
-            votes_per_item = []
+        for item_id, gt in zip(item_ids, gt_items):
+            in_votes, out_votes = 0, 0
             for _ in range(n):
                 worker_acc = random.uniform(crowd_acc[0], crowd_acc[1])
                 worker_vote = np.random.binomial(1, worker_acc if gt == 1 else 1 - worker_acc)
-                votes_per_item.append(worker_vote)
-            item_label = 1 if votes_per_item.count(1) >= n // 2 else 0
+                if worker_vote == 1:
+                    in_votes += 1
+                else:
+                    out_votes += 1
+            item_label = 1 if in_votes >= out_votes else 0
+            item_crowd_counts[item_id][predicate]['in'] += in_votes
+            item_crowd_counts[item_id][predicate]['out'] += out_votes
             crodsourced_items.append(item_label)
         return crodsourced_items
 
