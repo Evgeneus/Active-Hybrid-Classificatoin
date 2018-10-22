@@ -7,7 +7,6 @@ from adaptive_machine_and_crowd.src.experiment_handler import run_experiment
 '''
     Parameters for active learners:
     'n_instances_query': num of instances for labeling for 1 query,
-    # 'n_queries': num of active learning iterations,
     'size_init_train_data': initial size of training dataset,
     'sampling_strategies': list of active learning sampling strategies
     
@@ -19,7 +18,9 @@ from adaptive_machine_and_crowd.src.experiment_handler import run_experiment
     Experiment parameters:
     'shuffling_num': reputation number of the whole experiment,
     'dataset_file_name ': file name of dataset,
-    'predicates': predicates will be used in experiment
+    'predicates': predicates will be used in experiment,
+    'B': budget available for classification,
+    'B_al_prop': proportion of B for training machines (AL-Box)
     
 '''
 

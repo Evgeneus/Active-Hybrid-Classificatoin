@@ -12,12 +12,22 @@ def run_experiment(params):
     # parameters for crowd simulation
     crowd_acc = params['crowd_acc']
     crowd_votes_per_item = params['crowd_votes_per_item']
+    predicates = params['predicates']
 
     # data_df = []
     for experiment_id in range(params['shuffling_num']):
-        X, y_screening, y_predicate = load_data(params['dataset_file_name'], params['predicates'])
+        X, y_screening, y_predicate = load_data(params['dataset_file_name'], predicates)
         vectorizer = Vectorizer()
         vectorizer.fit(X)
+
+        items_num = y_screening.shape[0]
+        _item_ids = {pr: np.arange(items_num) for pr in predicates}  # helper to track item ids
+        item_crowd_counts = {}
+        for item_id in range(items_num):
+            item_crowd_counts[item_id] = {pr: {'in': 0, 'out': 0} for pr in predicates}
+
+        # item_crowd_counts = {item_id: {predicates[0]: 0, 0], predicates[1]: [0, 0]} for item_id in range(items_num)}
+        item_classified = {item_id: 1 for item_id in range(items_num)}  # classify all items as in by default
 
         params.update({
             'X': X,
@@ -27,8 +37,8 @@ def run_experiment(params):
         })
 
         heuristic = params['heuristic'](params)
-        SAL = configure_al_box(params)
-        num_items_queried = params['size_init_train_data']*len(params['predicates'])
+        SAL = configure_al_box(params, _item_ids, item_crowd_counts, item_classified)
+        num_items_queried = params['size_init_train_data']*len(predicates)
         heuristic.update_budget_al(num_items_queried*crowd_votes_per_item)
         # data = []
         i = 0
@@ -75,7 +85,7 @@ def run_experiment(params):
 
 
 # set up active learning box
-def configure_al_box(params):
+def configure_al_box(params, _item_ids, item_crowd_counts, item_classified):
     y_screening, y_predicate = params['y_screening'], params['y_predicate']
     size_init_train_data = params['size_init_train_data']
     predicates = params['predicates']
@@ -83,12 +93,25 @@ def configure_al_box(params):
     X_pool = params['vectorizer'].transform(params['X'])
     # creating balanced init training data
     train_idx = get_init_training_data_idx(y_screening, y_predicate, size_init_train_data)
+
+    # # crowdsource items
+    # for pr in predicates:
+    #     gt_items_queried = y_predicate[pr][train_idx]
+    #     y_crowdsourced = CrowdSimulator.crowdsource_items(gt_items_queried, params['crowd_acc'][pr], params['crowd_votes_per_item'])
+
     y_predicate_train_init = {}
     X_train_init = X_pool[train_idx]
     X_pool = np.delete(X_pool, train_idx, axis=0)
     for pr in predicates:
         y_predicate_train_init[pr] = y_predicate[pr][train_idx]
         y_predicate[pr] = np.delete(y_predicate[pr], train_idx)
+        _item_ids[pr] = np.delete(_item_ids[pr], train_idx)
+        for item_id, label in zip(train_idx, y_predicate_train_init[pr]):
+            if label == 1:
+                item_crowd_counts[item_id][pr]['in'] = params['crowd_votes_per_item']
+            else:
+                item_crowd_counts[item_id][pr]['out'] = params['crowd_votes_per_item']
+            item_classified[item_id] = label
 
     # dict of active learners per predicate
     learners = {}
