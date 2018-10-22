@@ -127,7 +127,7 @@ class Learner:
         )
 
 
-class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin, CrowdSimulator):
+class ScreeningActiveLearner:
 
     def __init__(self, params):
         self.n_instances_query = params['n_instances_query']

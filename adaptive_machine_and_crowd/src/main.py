@@ -21,7 +21,6 @@ from adaptive_machine_and_crowd.src.experiment_handler import run_experiment
     'predicates': predicates will be used in experiment,
     'B': budget available for classification,
     'B_al_prop': proportion of B for training machines (AL-Box)
-    
 '''
 
 

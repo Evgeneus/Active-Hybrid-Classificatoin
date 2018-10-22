@@ -57,11 +57,13 @@ class MetricsMixin:
         FP == False Inclusion
         FN == False Exclusion
         '''
+        item_ids = gt.keys()
         fp = 0.
         fn = 0.
         tp = 0.
         tn = 0.
-        for gt_val, pred_val in zip(gt, predicted):
+        for item_id in item_ids:
+            gt_val, pred_val = gt[item_id], predicted[item_id]
             if gt_val and not pred_val:
                 fn += 1
             if not gt_val and pred_val:
@@ -82,13 +84,13 @@ class MetricsMixin:
 
         return precision, recall, fbeta, loss, fn, fp
 
-    @staticmethod
-    def compute_tpr_tnr(gt, predicted):
-        tn, fp, fn, tp = confusion_matrix(gt, predicted).ravel()
-        TPR = tp / (tp + fn)  # sensitivity, recall, or true positive rate
-        TNR = tn / (tn + fp)  # specificity or true negative rate
-
-        return TPR, TNR
+    # @staticmethod
+    # def compute_tpr_tnr(gt, predicted):
+    #     tn, fp, fn, tp = confusion_matrix(gt, predicted).ravel()
+    #     TPR = tp / (tp + fn)  # sensitivity, recall, or true positive rate
+    #     TNR = tn / (tn + fp)  # specificity or true negative rate
+    #
+    #     return TPR, TNR
 
 
 def load_data(file_name, predicates):
@@ -170,9 +172,8 @@ def mix_sampling(classifier, X, learners_, n_instances=1, **uncertainty_measure_
 
 def transform_print(data_df, file_name):
     # compute mean and std, and median over results
-    columns = ['num_items_queried', 'precision_mean',
-               'recall_mean', 'f_beta_mean', 'loss_mean',
-               'fn_count_mean', 'fp_count_mean']
+    columns = ['precision_mean', 'recall_mean', 'f_beta_mean',
+               'loss_mean', 'fn_count_mean', 'fp_count_mean']
     df_concat = pd.concat(data_df)
     strategies = df_concat['sampling_strategy'].unique()
     df_to_print = pd.DataFrame([], columns=columns)
