@@ -1,13 +1,13 @@
 from modAL.uncertainty import uncertainty_sampling
 from adaptive_machine_and_crowd.src.utils import random_sampling, objective_aware_sampling, mix_sampling
 
-from adaptive_machine_and_crowd.src.experiment_handler import experiment_handler
+from adaptive_machine_and_crowd.src.experiment_handler import run_experiment
 
 '''
     Parameters for active learners:
     'n_instances_query': num of instances for labeling for 1 query,
     'n_queries': num of active learning iterations,
-    'init_train_size': initial size of training dataset,
+    'size_init_train_data': initial size of training dataset,
     'sampling_strategies': list of active learning sampling strategies
     
     Classification parameters:
@@ -16,8 +16,7 @@ from adaptive_machine_and_crowd.src.experiment_handler import experiment_handler
     'lr': loss ration for the screening loss
     
     Experiment parameters:
-    'test_size': proportion of test size,
-    'k': reputation number of the whole experiment,
+    'shuffling_num': reputation number of the whole experiment,
     'dataset_file_name ': file name of dataset,
     'predicates': predicates will be used in experiment
     
@@ -28,8 +27,8 @@ if __name__ == '__main__':
     # Parameters for active learners
     n_instances_query = 200
     n_queries = 100
-    init_train_size = 20
-    sampling_strategies = [objective_aware_sampling, uncertainty_sampling, random_sampling]
+    size_init_train_data = 20
+    sampling_strategy = uncertainty_sampling
 
     # Classification parameters
     screening_out_threshold = 0.7
@@ -37,8 +36,7 @@ if __name__ == '__main__':
     lr = 5
 
     # Experiment parameters
-    test_size = 0.4
-    k = 50
+    shuffling_num = 50
 
     # # OHUSMED DATASET
     # dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
@@ -60,16 +58,21 @@ if __name__ == '__main__':
 
     crowd_votes_per_item = 5
 
-    experiment_handler((dataset_file_name,
-                       n_instances_query,
-                       n_queries,
-                       init_train_size,
-                       screening_out_threshold,
-                       test_size,
-                       beta, lr, k,
-                       predicates,
-                       sampling_strategies,
-                       crowd_acc,
-                       crowd_votes_per_item))
 
+    params = {
+        'dataset_file_name': dataset_file_name,
+        'n_instances_query': n_instances_query,
+        'n_queries': n_queries,
+        'size_init_train_data': size_init_train_data,
+        'screening_out_threshold': screening_out_threshold,
+        'beta': beta,
+        'lr': lr,
+        'shuffling_num': shuffling_num,
+        'predicates': predicates,
+        'sampling_strategy': sampling_strategy,
+        'crowd_acc': crowd_acc,
+        'crowd_votes_per_item': crowd_votes_per_item
+    }
+
+    run_experiment(params)
     print('Done!')

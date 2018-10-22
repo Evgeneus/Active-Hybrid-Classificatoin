@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
 
@@ -8,110 +7,86 @@ from adaptive_machine_and_crowd.src.utils import transform_print, get_init_train
 from adaptive_machine_and_crowd.src.active_learning import Learner, ScreeningActiveLearner
 
 
-def experiment_handler(experiment_params):
-    file_name, n_instances_query,\
-    n_queries, init_train_size, \
-    screening_out_threshold, \
-    test_size, beta, lr, k, \
-    predicates, sampling_strategies, \
-    crowd_acc,    \
-    crowd_votes_per_item = experiment_params
+def run_experiment(params):
+    X, y_screening, y_predicate = load_data(params['dataset_file_name'], params['predicates'])
+    vectorizer = Vectorizer()
+    vectorizer.fit(X)
 
-    X, y_screening, y_predicate = load_data(file_name, predicates)
-    data_df = []
-    # split training-test datasets
-    for experiment_id in range(k):
-        train_idx, test_idx, _, _ = train_test_split(list(range(X.shape[0])), y_screening,
-                                                     test_size=test_size, stratify=y_screening)
-        print('-------------------------------')
-        for sampling_strategy in sampling_strategies:
-            print(sampling_strategy.__name__)
-            vectorizer = Vectorizer()
-            X_train = vectorizer.fit_transform(X[train_idx])
-            X_test = vectorizer.transform(X[test_idx])
+    params.update({
+        'X': X,
+        'y_screening': y_screening,
+        'y_predicate': y_predicate,
+        'vectorizer': vectorizer
+    })
+    # data_df = []
+    for experiment_id in range(params['shuffling_num']):
+        SAL = configure_al_box(params)
+        num_items_queried = params['size_init_train_data']*len(params['predicates'])
+        # data = []
+        for i in range(params['n_queries']):
+            SAL.update_stat()  # uncomment if use predicate selection feature
+            pr = SAL.select_predicate(i)
+            query_idx = SAL.query(pr)
+            SAL.teach(pr, query_idx)
 
-            y_screening_pool, y_screening_test = y_screening[train_idx], y_screening[test_idx]
-            y_predicate_pool = {}
-            for pr in predicates:
-                y_predicate_pool[pr] = y_predicate[pr][train_idx]
-
-            # creating balanced init training data
-            init_train_idx = get_init_training_data_idx(y_screening_pool, y_predicate_pool, init_train_size)
-            y_predicate_train_init = {}
-            X_train_init = X_train[init_train_idx]
-            X_pool = np.delete(X_train, init_train_idx, axis=0)
-            for pr in predicates:
-                y_predicate_train_init[pr] = y_predicate_pool[pr][init_train_idx]
-                y_predicate_pool[pr] = np.delete(y_predicate_pool[pr], init_train_idx)
-
-            # dict of active learners per predicate
-            learners = {}
-            for pr in predicates:  # setup predicate-based learners
-                learner_params = {
-                    'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced',
-                                                            C=0.1)),
-                    'p_out': 0.5,
-                    'sampling_strategy': sampling_strategy,
-                }
-                learner = Learner(learner_params)
-
-                y_test = y_predicate[pr][test_idx]
-                learner.setup_active_learner(X_train_init, y_predicate_train_init[pr],
-                                             X_pool, y_predicate_pool[pr], X_test, y_test)
-                learners[pr] = learner
-
-            screening_params = {
-                'n_instances_query': n_instances_query,  # num of instances for labeling for 1 query
-                'p_out': screening_out_threshold,
-                'lr': lr,
-                'beta': beta,
-                'learners': learners,
-                'crowd_acc': crowd_acc,
-                'crowd_votes_per_item': crowd_votes_per_item
-            }
-            SAL = ScreeningActiveLearner(screening_params)
-            SAL.init_stat()  # initialize statistic for predicates, uncomment if use predicate selection feature
-            num_items_queried = init_train_size*len(predicates)
-            data = []
-
-            for i in range(n_queries):
-                SAL.update_stat()  # uncomment if use predicate selection feature
-                pr = SAL.select_predicate(i)
-                query_idx= SAL.query(pr)
-                SAL.teach(pr, query_idx)
-
-                # if only one predicate -> keep y_test as predicate's y_test
-                if len(predicates) == 1:
-                    y_test_ = y_predicate[pr][test_idx]
-                else:
-                    y_test_ = y_screening_test
-                predicted = SAL.predict(X_test)
-                metrics = SAL.compute_screening_metrics(y_test_, predicted, SAL.lr, SAL.beta)
-                pre, rec, fbeta, loss, fn_count, fp_count = metrics
-                num_items_queried += SAL.n_instances_query
+            num_items_queried += SAL.n_instances_query
 
 
-                print('query no. {}, pr: {}, f_3 on val: {:1.2f}, f_3 test: {:1.2f}'.
-                      format(i + 1, pr, SAL.stat[pr]['f_beta'][-1], SAL.stat[pr]['f_beta_on_test'][-1]))
-                print('-------------------------')
+            print('query no. {}, pr: {}, f_3 on val: {:1.2f}'.
+                  format(i + 1, pr, SAL.stat[pr]['f_beta'][-1]))
+            print('-------------------------')
 
-            #     data.append([experiment_id, num_items_queried, pre, rec, fbeta, loss, fn_count, fp_count,
-            #                  learner_params['sampling_strategy'].__name__] +
-            #                 [SAL.stat[pred]['f_beta'][-1] for pred in predicates] +
-            #                 [SAL.stat[pred]['f_beta_on_test'][-1] for pred in predicates])
-            #
-            #     print('query no. {}: loss: {:1.3f}, fbeta: {:1.3f}, '
-            #           'recall: {:1.3f}, precisoin: {:1.3f}'
-            #           .format(i + 1, loss, fbeta, rec, pre))
-            # data_df.append(pd.DataFrame(data, columns=['experiment_id',
-            #                                            'num_items_queried',
-            #                                            'precision', 'recall',
-            #                                            'f_beta', 'loss',
-            #                                            'fn_count', 'fp_count',
-            #                                            'sampling_strategy'] +
-            #                                            ['estimated_f_beta_' + pred for pred in predicates] +
-            #                                            ['f_beta_on_test_' + pred for pred in predicates]))
+        #     data.append([experiment_id, num_items_queried, pre, rec, fbeta, loss, fn_count, fp_count,
+        #                  learner_params['sampling_strategy'].__name__] +
+        #                 [SAL.stat[pred]['f_beta'][-1] for pred in predicates] +
+        #                 [SAL.stat[pred]['f_beta_on_test'][-1] for pred in predicates])
+        #
+        #     print('query no. {}: loss: {:1.3f}, fbeta: {:1.3f}, '
+        #           'recall: {:1.3f}, precisoin: {:1.3f}'
+        #           .format(i + 1, loss, fbeta, rec, pre))
+        # data_df.append(pd.DataFrame(data, columns=['experiment_id',
+        #                                            'num_items_queried',
+        #                                            'precision', 'recall',
+        #                                            'f_beta', 'loss',
+        #                                            'fn_count', 'fp_count',
+        #                                            'sampling_strategy'] +
+        #                                            ['estimated_f_beta_' + pred for pred in predicates] +
+        #                                            ['f_beta_on_test_' + pred for pred in predicates]))
 
     # pd.concat(data_df).to_csv('../output/adaptive_machines_and_crowd/{}_adaptive_experiment_k{}_ninstq_{}_mix.csv'.
     #                           format(file_name, k, n_instances_query), index=False)
     # transform_print(data_df, file_name[:-4]+'_adaptive_experiment_k{}_ninstq_{}'.format(k, n_instances_query))
+
+
+# set up active learning box
+def configure_al_box(params):
+    y_screening, y_predicate = params['y_screening'], params['y_predicate']
+    size_init_train_data = params['size_init_train_data']
+    predicates = params['predicates']
+
+    X_pool = params['vectorizer'].transform(params['X'])
+    # creating balanced init training data
+    train_idx = get_init_training_data_idx(y_screening, y_predicate, size_init_train_data)
+    y_predicate_train_init = {}
+    X_train_init = X_pool[train_idx]
+    X_pool = np.delete(X_pool, train_idx, axis=0)
+    for pr in predicates:
+        y_predicate_train_init[pr] = y_predicate[pr][train_idx]
+        y_predicate[pr] = np.delete(y_predicate[pr], train_idx)
+
+    # dict of active learners per predicate
+    learners = {}
+    for pr in predicates:  # setup predicate-based learners
+        learner_params = {
+            'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced', C=0.1)),
+            'sampling_strategy': params['sampling_strategy'],
+        }
+        learner = Learner(learner_params)
+        learner.setup_active_learner(X_train_init, y_predicate_train_init[pr], X_pool, y_predicate[pr])
+        learners[pr] = learner
+
+    params.update({'learners': learners})
+    SAL = ScreeningActiveLearner(params)
+    SAL.init_stat()  # initialize statistic for predicates, uncomment if use predicate selection feature
+
+    return SAL

@@ -29,7 +29,6 @@ class ChoosePredicateMixin:
                 'tpr': [],
                 'tnr': [],
                 'f_beta': [],
-                'f_beta_on_test': []
             }
 
     # def _select_predicate(self, extrapolated_val):
@@ -49,7 +48,7 @@ class ChoosePredicateMixin:
         # estimate and save statistics for extrapolation
         for predicate in self.predicates:
             s = self.stat[predicate]
-            assert (len(s['num_items_queried']) == len(s['tpr']) == len(s['tnr'])), 'Stat attribute error'
+            assert (len(s['num_items_queried']) == len(s['tpr']) == len(s['tnr']) == len(s['f_beta'])), 'Stat attribute error'
 
             l = self.learners[predicate]
             X, y = l.learner.X_training, l.learner.y_training
@@ -73,11 +72,10 @@ class ChoosePredicateMixin:
             except IndexError:
                 num_items_queried_prev = 0
             self.stat[predicate]['num_items_queried']\
-                .append((num_items_queried_prev + self.n_instances_query) // 2)  # devide by 2 due to predicate selection method
+                .append((num_items_queried_prev + self.n_instances_query))
             self.stat[predicate]['tpr'].append(tpr_mean)
             self.stat[predicate]['tnr'].append(tnr_mean)
             self.stat[predicate]['f_beta'].append(f_beta_mean)
-            self.stat[predicate]['f_beta_on_test'].append(fbeta_score(l.y_test, clf.predict(l.X_test), beta=self.beta, average='binary'))
 
     # def extrapolate(self):
     #     extrapolated_val = {}
@@ -109,16 +107,14 @@ class ChoosePredicateMixin:
     #     return extrapolated_val
 
 
-class Learner(MetricsMixin):
+class Learner:
 
     def __init__(self, params):
         self.clf = params['clf']
         self.sampling_strategy = params['sampling_strategy']
-        self.p_out = 0.5
+        self.screening_out_threshold = params.get('screening_out_threshold', 0.5)
 
-    def setup_active_learner(self, X_train_init, y_train_init, X_pool, y_pool, X_test, y_test):
-        self.X_test, self.y_test = X_test, y_test
-
+    def setup_active_learner(self, X_train_init, y_train_init, X_pool, y_pool):
         # generate the pool
         self.X_pool = X_pool
         self.y_pool = y_pool
@@ -135,7 +131,7 @@ class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin):
 
     def __init__(self, params):
         self.n_instances_query = params['n_instances_query']
-        self.p_out = params['p_out']
+        self.screening_out_threshold = params['screening_out_threshold']
         self.lr = params['lr']
         self.beta = params['beta']
         self.learners = params['learners']
@@ -176,19 +172,6 @@ class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin):
         l.X_pool = np.delete(l.X_pool, query_idx, axis=0)
         l.y_pool = np.delete(l.y_pool, query_idx)
 
-        # # Uncomment for grid search of parameters
-        # param_grid = {
-        #     'base_estimator__C': [0.01, 0.1, 1, 10],
-        #     'base_estimator__class_weight': ['balanced', {0: 1, 1: 2}, {0: 1, 1: 3}]
-        # }
-        # k = 5
-        # grid = GridSearchCV(l.learner.estimator, cv=k, param_grid=param_grid,
-        #                     scoring='neg_log_loss', refit=True)
-        #
-        # grid.fit(X, y)
-        # l.learner.estimator = grid.best_estimator_
-        # l.learner.fit(X, y)
-
     def predict_proba(self, X):
         proba_in = np.ones(X.shape[0])
         for l in self.learners.values():
@@ -199,6 +182,6 @@ class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin):
 
     def predict(self, X):
         proba_out = self.predict_proba(X)[:, 0]
-        predicted = [0 if p > self.p_out else 1 for p in proba_out]
+        predicted = [0 if p > self.screening_out_threshold else 1 for p in proba_out]
 
         return predicted
