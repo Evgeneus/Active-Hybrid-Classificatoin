@@ -8,28 +8,34 @@ from adaptive_machine_and_crowd.src.active_learning import Learner, ScreeningAct
 
 
 def run_experiment(params):
-    X, y_screening, y_predicate = load_data(params['dataset_file_name'], params['predicates'])
-    vectorizer = Vectorizer()
-    vectorizer.fit(X)
-
-    params.update({
-        'X': X,
-        'y_screening': y_screening,
-        'y_predicate': y_predicate,
-        'vectorizer': vectorizer
-    })
     # data_df = []
     for experiment_id in range(params['shuffling_num']):
+        X, y_screening, y_predicate = load_data(params['dataset_file_name'], params['predicates'])
+        vectorizer = Vectorizer()
+        vectorizer.fit(X)
+
+        params.update({
+            'X': X,
+            'y_screening': y_screening,
+            'y_predicate': y_predicate,
+            'vectorizer': vectorizer
+        })
+
+        heuristic = params['heuristic'](params)
         SAL = configure_al_box(params)
         num_items_queried = params['size_init_train_data']*len(params['predicates'])
+        heuristic.update_budget_al(num_items_queried*SAL.crowd_votes_per_item)
         # data = []
-        for i in range(params['n_queries']):
+        i = 0
+        while heuristic.is_continue_al:
             SAL.update_stat()  # uncomment if use predicate selection feature
             pr = SAL.select_predicate(i)
             query_idx = SAL.query(pr)
             SAL.teach(pr, query_idx)
 
             num_items_queried += SAL.n_instances_query
+            heuristic.update_budget_al(SAL.n_instances_query*SAL.crowd_votes_per_item)
+            i += 1
 
 
             print('query no. {}, pr: {}, f_3 on val: {:1.2f}'.

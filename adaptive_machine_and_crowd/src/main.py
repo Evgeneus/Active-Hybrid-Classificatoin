@@ -1,12 +1,13 @@
 from modAL.uncertainty import uncertainty_sampling
 from adaptive_machine_and_crowd.src.utils import random_sampling, objective_aware_sampling, mix_sampling
+from adaptive_machine_and_crowd.src.heuristic import Heuristic
 
 from adaptive_machine_and_crowd.src.experiment_handler import run_experiment
 
 '''
     Parameters for active learners:
     'n_instances_query': num of instances for labeling for 1 query,
-    'n_queries': num of active learning iterations,
+    # 'n_queries': num of active learning iterations,
     'size_init_train_data': initial size of training dataset,
     'sampling_strategies': list of active learning sampling strategies
     
@@ -37,32 +38,29 @@ if __name__ == '__main__':
 
     # Experiment parameters
     shuffling_num = 50
+    B = 500000
+    B_al_prop = 0.5
 
     # # OHUSMED DATASET
     # dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
     # predicates = ['C14', 'C23']
-    # predicates = ['C14']
 
     # AMAZON DATASET
     predicates = ['is_negative', 'is_book']
     dataset_file_name = '100000_reviews_lemmatized.csv'
 
-    # LONELINESS SLR DATASET
+    # # LONELINESS SLR DATASET
     # predicates = ['oa_predicate', 'study_predicate']
-    # predicates = ['oa_predicate']
     # dataset_file_name = 'loneliness-dataset-2018.csv'
 
     # # parameters for crowdsourcing simulation
     crowd_acc = {predicates[0]: [0.7, 1.],
                  predicates[1]: [0.7, 1.]}
-
     crowd_votes_per_item = 5
-
 
     params = {
         'dataset_file_name': dataset_file_name,
         'n_instances_query': n_instances_query,
-        'n_queries': n_queries,
         'size_init_train_data': size_init_train_data,
         'screening_out_threshold': screening_out_threshold,
         'beta': beta,
@@ -71,7 +69,9 @@ if __name__ == '__main__':
         'predicates': predicates,
         'sampling_strategy': sampling_strategy,
         'crowd_acc': crowd_acc,
-        'crowd_votes_per_item': crowd_votes_per_item
+        'crowd_votes_per_item': crowd_votes_per_item,
+        'heuristic': Heuristic,
+        'B': B, 'B_al_prop': B_al_prop
     }
 
     run_experiment(params)
