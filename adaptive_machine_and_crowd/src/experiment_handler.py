@@ -3,11 +3,16 @@ import numpy as np
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
 
-from adaptive_machine_and_crowd.src.utils import transform_print, get_init_training_data_idx, load_data, Vectorizer
+from adaptive_machine_and_crowd.src.utils import transform_print, get_init_training_data_idx, \
+    load_data, Vectorizer, CrowdSimulator
 from adaptive_machine_and_crowd.src.active_learning import Learner, ScreeningActiveLearner
 
 
 def run_experiment(params):
+    # parameters for crowd simulation
+    crowd_acc = params['crowd_acc']
+    crowd_votes_per_item = params['crowd_votes_per_item']
+
     # data_df = []
     for experiment_id in range(params['shuffling_num']):
         X, y_screening, y_predicate = load_data(params['dataset_file_name'], params['predicates'])
@@ -24,17 +29,22 @@ def run_experiment(params):
         heuristic = params['heuristic'](params)
         SAL = configure_al_box(params)
         num_items_queried = params['size_init_train_data']*len(params['predicates'])
-        heuristic.update_budget_al(num_items_queried*SAL.crowd_votes_per_item)
+        heuristic.update_budget_al(num_items_queried*crowd_votes_per_item)
         # data = []
         i = 0
         while heuristic.is_continue_al:
             SAL.update_stat()  # uncomment if use predicate selection feature
             pr = SAL.select_predicate(i)
             query_idx = SAL.query(pr)
-            SAL.teach(pr, query_idx)
+
+            # crowdsource sampled items
+            gt_items_queried = SAL.learners[pr].y_pool[query_idx]
+            y_crowdsourced = CrowdSimulator.crowdsource_items(gt_items_queried, crowd_acc[pr], crowd_votes_per_item)
+
+            SAL.teach(pr, query_idx, y_crowdsourced)
 
             num_items_queried += SAL.n_instances_query
-            heuristic.update_budget_al(SAL.n_instances_query*SAL.crowd_votes_per_item)
+            heuristic.update_budget_al(SAL.n_instances_query*crowd_votes_per_item)
             i += 1
 
 

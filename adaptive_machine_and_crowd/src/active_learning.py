@@ -136,9 +136,6 @@ class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin, CrowdSimulator)
         self.beta = params['beta']
         self.learners = params['learners']
         self.predicates = list(self.learners.keys())
-        # parameters for crowd simulation
-        self.crowd_acc = params['crowd_acc']
-        self.crowd_votes_per_item = params['crowd_votes_per_item']
 
     def select_predicate(self, param):
         if len(self.predicates) == 1:
@@ -157,13 +154,9 @@ class ScreeningActiveLearner(MetricsMixin, ChoosePredicateMixin, CrowdSimulator)
                                        learners_=learners_)
         return query_idx
 
-    def teach(self, predicate, query_idx):
+    def teach(self, predicate, query_idx, y_crowdsourced):
         l = self.learners[predicate]
-        y_crowdsourced = self.crowdsource_items(l.y_pool[query_idx],
-                                                self.crowd_acc[predicate],
-                                                self.crowd_votes_per_item)
         l.learner.teach(l.X_pool[query_idx], y_crowdsourced)
-
         # remove queried instance from pool
         l.X_pool = np.delete(l.X_pool, query_idx, axis=0)
         l.y_pool = np.delete(l.y_pool, query_idx)
