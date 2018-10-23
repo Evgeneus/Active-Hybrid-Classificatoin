@@ -10,18 +10,18 @@ class ShortestMultiRun:
         self.estimated_predicate_selectivity = params['estimated_predicate_selectivity']
         self.predicates = params['predicates']
         self.clf_threshold = params['clf_threshold']
+        self.stop_score = params['stop_score']
         # self.ground_truth = params['ground_truth']
 
     def do_round(self, crowd_votes_counts, item_ids, item_labels):
         budget_round = None
-
+        predicate_assigned = self.assign_predicates(item_ids, crowd_votes_counts, item_labels)
         unclassified_item_ids = self.classify_items(item_ids, crowd_votes_counts, item_labels)
 
         return unclassified_item_ids, budget_round
 
     def classify_items(self, item_ids, crowd_votes_counts, item_labels):
         unclassified_item_ids = []
-
         for item_id in item_ids:
             prob_item_in = 1.
             for predicate in self.predicates:
@@ -33,7 +33,6 @@ class ShortestMultiRun:
                     prior_pred_in = predicate_select
                 else:
                     prior_pred_in = predicate_select
-
                 in_c, out_c = [crowd_votes_counts[item_id][predicate][key] for key in ['in', 'out']]
                 if in_c == 0 and out_c == 0:
                     prob_predicate_in = predicate_select
@@ -53,5 +52,46 @@ class ShortestMultiRun:
             else:
                 unclassified_item_ids.append(item_id)
 
-        # return items_classified, items_to_classify
         return np.array(unclassified_item_ids)
+
+    def assign_predicates(self, item_ids, crowd_votes_counts, item_labels):
+        predicate_assigned = {}
+        for item_id in item_ids:
+            classify_score = {}
+            joint_prob_votes_out = {predicate: 1. for predicate in self.predicates}
+            for predicate in self.predicates:
+                preducate_acc = self.estimated_predicate_accuracy[predicate]
+                predicate_select = self.estimated_predicate_selectivity[predicate]
+
+                if hasattr(self, 'prior_prob_pos'):
+                    # TO DO: use machine prior!!!
+                    prior_pred_in = predicate_select
+                    prob_pred_out = 1 - predicate_select
+                else:
+                    prob_pred_out = 1 - predicate_select
+                    prior_pred_in = predicate_select
+                in_c, out_c = [crowd_votes_counts[item_id][predicate][key] for key in ['in', 'out']]
+                for n in range(1, 11):
+                    # new value is out
+                    prob_next_vote_out = preducate_acc * prob_pred_out + (1 - preducate_acc) * (1 - prob_pred_out)
+                    joint_prob_votes_out[predicate] *= prob_next_vote_out
+
+                    term_in = binom(in_c + out_c + n, in_c) * preducate_acc ** in_c \
+                              * (1 - preducate_acc) ** (out_c + n) * prior_pred_in
+                    term_out = binom(in_c + out_c + n, out_c + n) * preducate_acc ** (out_c + n) \
+                               * (1 - preducate_acc) ** in_c * (1 - prior_pred_in)
+
+                    prob_predicate_out = term_out / (term_in + term_out)
+
+                    # TO Experiment!!!
+                    if prob_predicate_out >= self.clf_threshold:
+                        classify_score[predicate] = n / joint_prob_votes_out[predicate]
+                        break
+                    elif n == 10:
+                        classify_score[predicate] = n / joint_prob_votes_out[predicate]
+
+            predicate_best_score = min(classify_score, key=classify_score.get)
+            if classify_score[predicate_best_score] < self.stop_score:
+                predicate_assigned[item_id] = predicate_best_score
+
+        return predicate_assigned

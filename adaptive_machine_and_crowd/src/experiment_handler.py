@@ -72,7 +72,8 @@ def run_experiment(params):
                 predicates[1]: 0.50
             },
             'predicates': predicates,
-            'clf_threshold': 0.9
+            'clf_threshold': 0.9,
+            'stop_score': 300
         }
         SMR = ShortestMultiRun(smr_params)
         unclassified_item_ids, budget_round = SMR.do_round(crowd_votes_counts, np.arange(items_num), item_labels)
