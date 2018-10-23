@@ -26,7 +26,7 @@ from adaptive_machine_and_crowd.src.experiment_handler import run_experiment
 
 if __name__ == '__main__':
     # Parameters for active learners
-    n_instances_query = 200
+    n_instances_query = 20
     n_queries = 100
     size_init_train_data = 20
     sampling_strategy = uncertainty_sampling
@@ -38,20 +38,20 @@ if __name__ == '__main__':
 
     # Experiment parameters
     shuffling_num = 50
-    B = 500000
+    B = 10000
     B_al_prop = 0.5
 
     # # OHUSMED DATASET
     # dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
     # predicates = ['C14', 'C23']
 
-    # AMAZON DATASET
-    predicates = ['is_negative', 'is_book']
-    dataset_file_name = '100000_reviews_lemmatized.csv'
+    # # AMAZON DATASET
+    # predicates = ['is_negative', 'is_book']
+    # dataset_file_name = '100000_reviews_lemmatized.csv'
 
-    # # LONELINESS SLR DATASET
-    # predicates = ['oa_predicate', 'study_predicate']
-    # dataset_file_name = 'loneliness-dataset-2018.csv'
+    # LONELINESS SLR DATASET
+    predicates = ['oa_predicate', 'study_predicate']
+    dataset_file_name = 'loneliness-dataset-2018.csv'
 
     # # parameters for crowdsourcing simulation
     crowd_acc = {predicates[0]: [0.7, 1.],

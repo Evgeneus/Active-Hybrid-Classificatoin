@@ -6,6 +6,7 @@ from sklearn.calibration import CalibratedClassifierCV
 from adaptive_machine_and_crowd.src.utils import transform_print, get_init_training_data_idx, \
     load_data, Vectorizer, CrowdSimulator, MetricsMixin
 from adaptive_machine_and_crowd.src.active_learning import Learner, ScreeningActiveLearner
+from adaptive_machine_and_crowd.src.sm_run.shortest_multi_run import ShortestMultiRun
 
 
 def run_experiment(params):
@@ -24,10 +25,10 @@ def run_experiment(params):
 
         items_num = y_screening.shape[0]
         item_ids_helper = {pr: np.arange(items_num) for pr in predicates}  # helper to track item ids
-        item_crowd_counts = {}
+        crowd_votes_counts = {}
         for item_id in range(items_num):
-            item_crowd_counts[item_id] = {pr: {'in': 0, 'out': 0} for pr in predicates}
-        item_classified = {item_id: 1 for item_id in range(items_num)}  # classify all items as in by default
+            crowd_votes_counts[item_id] = {pr: {'in': 0, 'out': 0} for pr in predicates}
+        item_labels = {item_id: 1 for item_id in range(items_num)}  # classify all items as in by default
         y_screening_dict = {item_id: label for item_id, label in zip(list(range(items_num)), y_screening)}
 
         params.update({
@@ -38,7 +39,7 @@ def run_experiment(params):
         })
 
         heuristic = params['heuristic'](params)
-        SAL = configure_al_box(params, item_ids_helper, item_crowd_counts, item_classified)
+        SAL = configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels)
         num_items_queried = params['size_init_train_data']*len(predicates)
         heuristic.update_budget_al(num_items_queried*crowd_votes_per_item)
         results_list = []
@@ -52,7 +53,7 @@ def run_experiment(params):
             # crowdsource sampled items
             gt_items_queried = SAL.learners[pr].y_pool[query_idx]
             y_crowdsourced = CrowdSimulator.crowdsource_items(item_ids_helper[pr][query_idx], gt_items_queried, pr,
-                                                              crowd_acc[pr], crowd_votes_per_item, item_crowd_counts)
+                                                              crowd_acc[pr], crowd_votes_per_item, crowd_votes_counts)
             SAL.teach(pr, query_idx, y_crowdsourced)
             item_ids_helper[pr] = np.delete(item_ids_helper[pr], query_idx)
 
@@ -60,8 +61,24 @@ def run_experiment(params):
             heuristic.update_budget_al(SAL.n_instances_query*crowd_votes_per_item)
             i += 1
 
+        # DO SM-RUN
+        smr_params = {
+            'estimated_predicate_accuracy': {
+                predicates[0]: 0.9,
+                predicates[1]: 0.9
+            },
+            'estimated_predicate_selectivity': {
+                predicates[0]: 0.30,
+                predicates[1]: 0.50
+            },
+            'predicates': predicates,
+            'clf_threshold': 0.9
+        }
+        SMR = ShortestMultiRun(smr_params)
+        unclassified_item_ids, budget_round = SMR.do_round(crowd_votes_counts, np.arange(items_num), item_labels)
+
         # compute metrics and pint results to csv
-        metrics = MetricsMixin.compute_screening_metrics(y_screening_dict, item_classified,
+        metrics = MetricsMixin.compute_screening_metrics(y_screening_dict, item_labels,
                                                          params['lr'], params['beta'])
         pre, rec, f_beta, loss, fn_count, fp_count = metrics
         num_items_queried += SAL.n_instances_query
@@ -81,7 +98,7 @@ def run_experiment(params):
 
 
 # set up active learning box
-def configure_al_box(params, item_ids_helper, item_crowd_counts, item_classified):
+def configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels):
     y_screening, y_predicate = params['y_screening'], params['y_predicate']
     size_init_train_data = params['size_init_train_data']
     predicates = params['predicates']
@@ -99,10 +116,10 @@ def configure_al_box(params, item_ids_helper, item_crowd_counts, item_classified
         item_ids_helper[pr] = np.delete(item_ids_helper[pr], train_idx)
         for item_id, label in zip(train_idx, y_predicate_train_init[pr]):
             if label == 1:
-                item_crowd_counts[item_id][pr]['in'] = params['crowd_votes_per_item']
+                crowd_votes_counts[item_id][pr]['in'] = params['crowd_votes_per_item']
             else:
-                item_crowd_counts[item_id][pr]['out'] = params['crowd_votes_per_item']
-            item_classified[item_id] = label
+                crowd_votes_counts[item_id][pr]['out'] = params['crowd_votes_per_item']
+            item_labels[item_id] = label
 
     # dict of active learners per predicate
     learners = {}

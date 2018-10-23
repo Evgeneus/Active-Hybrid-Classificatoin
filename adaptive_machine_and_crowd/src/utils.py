@@ -23,7 +23,7 @@ class Vectorizer():
 class CrowdSimulator:
 
     @staticmethod
-    def crowdsource_items(item_ids, gt_items, predicate, crowd_acc, n, item_crowd_counts):
+    def crowdsource_items(item_ids, gt_items, predicate, crowd_acc, n, crowd_votes_counts):
         '''
         :param gt_items: list of ground truth values fo items to crowdsource
         :param crowd_acc: crowd accuracy range on predicate given
@@ -42,8 +42,8 @@ class CrowdSimulator:
                 else:
                     out_votes += 1
             item_label = 1 if in_votes >= out_votes else 0
-            item_crowd_counts[item_id][predicate]['in'] += in_votes
-            item_crowd_counts[item_id][predicate]['out'] += out_votes
+            crowd_votes_counts[item_id][predicate]['in'] += in_votes
+            crowd_votes_counts[item_id][predicate]['out'] += out_votes
             crodsourced_items.append(item_label)
         return crodsourced_items
 
