@@ -1,6 +1,6 @@
 from modAL.uncertainty import uncertainty_sampling
 from adaptive_machine_and_crowd.src.utils import random_sampling, objective_aware_sampling, mix_sampling
-from adaptive_machine_and_crowd.src.heuristic import Heuristic
+from adaptive_machine_and_crowd.src.policy import PointSwitchPolicy
 
 from adaptive_machine_and_crowd.src.experiment_handler import run_experiment
 
@@ -32,14 +32,20 @@ if __name__ == '__main__':
     sampling_strategy = uncertainty_sampling
 
     # Classification parameters
-    screening_out_threshold = 0.7
+    screening_out_threshold = 0.99
     beta = 3
     lr = 5
 
     # Experiment parameters
-    shuffling_num = 50
+    shuffling_num = 2
     B = 10000
-    B_al_prop = 0.5
+    policies = [PointSwitchPolicy({'name': 'PSP: 30%AL/70%CR',
+                                   'B': B,
+                                   'B_al_prop': 0.3}),
+                PointSwitchPolicy({'name': 'PSP: 50%AL/50%CR',
+                                   'B': B,
+                                   'B_al_prop': 0.5})
+                ]
 
     # # OHUSMED DATASET
     # dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
@@ -70,8 +76,7 @@ if __name__ == '__main__':
         'sampling_strategy': sampling_strategy,
         'crowd_acc': crowd_acc,
         'crowd_votes_per_item': crowd_votes_per_item,
-        'heuristic': Heuristic,
-        'B': B, 'B_al_prop': B_al_prop
+        'policies': policies,
     }
 
     run_experiment(params)

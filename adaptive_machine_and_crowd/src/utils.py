@@ -172,14 +172,14 @@ def mix_sampling(classifier, X, learners_, n_instances=1, **uncertainty_measure_
 
 def transform_print(data_df, file_name):
     # compute mean and std, and median over results
-    columns = ['precision_mean', 'recall_mean', 'f_beta_mean',
+    columns = ['budget_spent_mean', 'precision_mean', 'recall_mean', 'f_beta_mean',
                'loss_mean', 'fn_count_mean', 'fp_count_mean']
     df_concat = pd.concat(data_df)
-    strategies = df_concat['sampling_strategy'].unique()
+    policies = df_concat['policy'].unique()
     df_to_print = pd.DataFrame([], columns=columns)
-    for strategy in strategies:
-        df_strategy = df_concat[df_concat['sampling_strategy'] == strategy]
-        by_row_index = df_strategy.groupby(df_strategy.index)
+    for policy in policies:
+        df_policy = df_concat[df_concat['policy'] == policy]
+        by_row_index = df_policy.groupby(df_policy.index)
         df_means = by_row_index.mean()
         df_std = by_row_index.std()
         df_median = by_row_index.median()
@@ -193,6 +193,7 @@ def transform_print(data_df, file_name):
         df_to_print_['loss_median'] = df_median['loss']
         df_to_print_['fn_count_median'] = df_median['fn_count']
         df_to_print_['fp_count_median'] = df_median['fp_count']
+        df_to_print_['budget_spent_median'] = df_median['budget_spent']
 
         df_to_print_['precision_std'] = df_std['precision']
         df_to_print_['recall_std'] = df_std['recall']
@@ -200,7 +201,10 @@ def transform_print(data_df, file_name):
         df_to_print_['loss_std'] = df_std['loss']
         df_to_print_['fn_count_std'] = df_std['fn_count']
         df_to_print_['fp_count_std'] = df_std['fp_count']
-        df_to_print_['sampling_strategy'] = strategy
+        df_to_print_['budget_spent_std'] = df_std['budget_spent']
+        df_to_print_['policy'] = policy
+        df_to_print_['sampling_strategy'] = data_df[0]['sampling_strategy'].values[0]
+
 
         df_to_print = df_to_print.append(df_to_print_)
 

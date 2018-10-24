@@ -6,7 +6,6 @@ import random
 class ShortestMultiRun:
 
     def __init__(self, params):
-        # self.workers_accuracy = params['workers_accuracy']
         self.estimated_predicate_accuracy = params['estimated_predicate_accuracy']
         self.estimated_predicate_selectivity = params['estimated_predicate_selectivity']
         self.predicates = params['predicates']

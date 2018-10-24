@@ -1,6 +1,7 @@
-class Heuristic:
+class PointSwitchPolicy:
 
     def __init__(self, params):
+        self.name = params['name']
         self.B = params['B']
         self.B_al = round(self.B * params['B_al_prop'])
         self.B_crowd = self.B - self.B_al
@@ -16,7 +17,6 @@ class Heuristic:
     @property
     def is_continue_al(self):
         if self.B_al_spent >= self.B_al:
-            print('AL-Box finished')
             return False
         else:
             return True
@@ -24,7 +24,6 @@ class Heuristic:
     @property
     def is_continue_crowd(self):
         if self.B_crowd_spent >= self.B_crowd:
-            print('Crowd-Box finished')
             return False
         else:
             return True
