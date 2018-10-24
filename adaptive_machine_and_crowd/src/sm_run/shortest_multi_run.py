@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.special import binom
+import random
 
 
 class ShortestMultiRun:
@@ -11,13 +12,14 @@ class ShortestMultiRun:
         self.predicates = params['predicates']
         self.clf_threshold = params['clf_threshold']
         self.stop_score = params['stop_score']
-        # self.ground_truth = params['ground_truth']
+        self.crowd_acc_range = params['crowd_acc']
+        self.item_predicate_gt = params['item_predicate_gt']
 
     def do_round(self, crowd_votes_counts, item_ids, item_labels):
-        budget_round = None
         predicate_assigned = self.assign_predicates(item_ids, crowd_votes_counts, item_labels)
+        self.crowdsource_items(crowd_votes_counts, predicate_assigned)
         unclassified_item_ids = self.classify_items(item_ids, crowd_votes_counts, item_labels)
-
+        budget_round = len(predicate_assigned)
         return unclassified_item_ids, budget_round
 
     def classify_items(self, item_ids, crowd_votes_counts, item_labels):
@@ -72,7 +74,6 @@ class ShortestMultiRun:
                     prior_pred_in = predicate_select
                 in_c, out_c = [crowd_votes_counts[item_id][predicate][key] for key in ['in', 'out']]
                 for n in range(1, 11):
-                    # new value is out
                     prob_next_vote_out = preducate_acc * prob_pred_out + (1 - preducate_acc) * (1 - prob_pred_out)
                     joint_prob_votes_out[predicate] *= prob_next_vote_out
 
@@ -95,3 +96,15 @@ class ShortestMultiRun:
                 predicate_assigned[item_id] = predicate_best_score
 
         return predicate_assigned
+
+    def crowdsource_items(self, crowd_votes_counts, predicate_assigned):
+        for item_id in predicate_assigned.keys():
+            predicate = predicate_assigned[item_id]
+            crowd_acc_range = self.crowd_acc_range[predicate]
+            worker_acc = random.uniform(crowd_acc_range[0], crowd_acc_range[1])
+            gt = self.item_predicate_gt[predicate][item_id]
+            worker_vote = np.random.binomial(1, worker_acc if gt == 1 else 1 - worker_acc)
+            if worker_vote == 1:
+                crowd_votes_counts[item_id][predicate]['in'] += 1
+            else:
+                crowd_votes_counts[item_id][predicate]['out'] += 1

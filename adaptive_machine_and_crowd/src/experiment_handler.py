@@ -24,6 +24,9 @@ def run_experiment(params):
         vectorizer.fit(X)
 
         items_num = y_screening.shape[0]
+        item_predicate_gt = {}
+        for pr in predicates:
+            item_predicate_gt[pr] = {item_id: gt_val for item_id, gt_val in zip(list(range(items_num)), y_predicate[pr])}
         item_ids_helper = {pr: np.arange(items_num) for pr in predicates}  # helper to track item ids
         crowd_votes_counts = {}
         for item_id in range(items_num):
@@ -72,11 +75,16 @@ def run_experiment(params):
                 predicates[1]: 0.50
             },
             'predicates': predicates,
+            'item_predicate_gt': item_predicate_gt,
             'clf_threshold': 0.9,
-            'stop_score': 300
+            'stop_score': 300,
+            'crowd_acc': crowd_acc
         }
         SMR = ShortestMultiRun(smr_params)
-        unclassified_item_ids, budget_round = SMR.do_round(crowd_votes_counts, np.arange(items_num), item_labels)
+        unclassified_item_ids = SMR.classify_items(np.arange(items_num), crowd_votes_counts, item_labels)
+        while heuristic.is_continue_crowd and unclassified_item_ids.any():
+            unclassified_item_ids, budget_round = SMR.do_round(crowd_votes_counts, unclassified_item_ids, item_labels)
+            heuristic.update_budget_crowd(budget_round)
 
         # compute metrics and pint results to csv
         metrics = MetricsMixin.compute_screening_metrics(y_screening_dict, item_labels,
