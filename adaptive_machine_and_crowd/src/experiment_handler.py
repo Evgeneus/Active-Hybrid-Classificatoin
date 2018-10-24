@@ -76,7 +76,7 @@ def run_experiment(params):
                 },
                 'predicates': predicates,
                 'item_predicate_gt': item_predicate_gt,
-                'clf_threshold': 0.9,
+                'clf_threshold': 0.99,
                 'stop_score': 300,
                 'crowd_acc': crowd_acc
             }
@@ -91,14 +91,14 @@ def run_experiment(params):
             metrics = MetricsMixin.compute_screening_metrics(y_screening_dict, item_labels,
                                                              params['lr'], params['beta'])
             pre, rec, f_beta, loss, fn_count, fp_count = metrics
-            budget_spent = policy.B_al_spent + policy.B_crowd_spent
-            results_list.append([budget_spent, pre, rec, f_beta, loss, fn_count,
+            budget_spent_item = (policy.B_al_spent + policy.B_crowd_spent) / items_num
+            results_list.append([budget_spent_item, pre, rec, f_beta, loss, fn_count,
                                  fp_count, params['sampling_strategy'].__name__,
                                  policy.name])
 
-            print('loss: {:1.3f}, fbeta: {:1.3f}, '
+            print('budget_spent: {:1.3f}, loss: {:1.3f}, fbeta: {:1.3f}, '
                   'recall: {:1.3f}, precisoin: {:1.3f}'
-                  .format(loss, f_beta, rec, pre))
+                  .format(budget_spent_item, loss, f_beta, rec, pre))
             print('--------------------------------------------------------------')
             results_df.append(pd.DataFrame(results_list, columns=['budget_spent',
                                                        'precision', 'recall',
