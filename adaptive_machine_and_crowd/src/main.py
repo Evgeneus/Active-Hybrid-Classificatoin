@@ -41,10 +41,10 @@ if __name__ == '__main__':
     B = 10000
     policies = [PointSwitchPolicy({'name': 'PSP: 30%AL/70%CR',
                                    'B': B,
-                                   'B_al_prop': 0.3}),
-                PointSwitchPolicy({'name': 'PSP: 50%AL/50%CR',
-                                   'B': B,
-                                   'B_al_prop': 0.5})
+                                   'B_al_prop': 0.0}),
+                # PointSwitchPolicy({'name': 'PSP: 50%AL/50%CR',
+                #                    'B': B,
+                #                    'B_al_prop': 0.5})
                 ]
 
     # # OHUSMED DATASET

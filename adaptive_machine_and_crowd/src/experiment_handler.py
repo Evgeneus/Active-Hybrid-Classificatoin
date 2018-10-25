@@ -76,8 +76,8 @@ def run_experiment(params):
                 },
                 'predicates': predicates,
                 'item_predicate_gt': item_predicate_gt,
-                'clf_threshold': 0.99,
-                'stop_score': 300,
+                'clf_threshold': 0.95,
+                'stop_score': 100,
                 'crowd_acc': crowd_acc
             }
             SMR = ShortestMultiRun(smr_params)

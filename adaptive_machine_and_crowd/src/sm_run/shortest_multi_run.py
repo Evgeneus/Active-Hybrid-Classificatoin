@@ -15,7 +15,7 @@ class ShortestMultiRun:
         self.item_predicate_gt = params['item_predicate_gt']
 
     def do_round(self, crowd_votes_counts, item_ids, item_labels):
-        predicate_assigned = self.assign_predicates(item_ids, crowd_votes_counts, item_labels)
+        predicate_assigned = self.assign_predicates(item_ids, crowd_votes_counts)
         self.crowdsource_items(crowd_votes_counts, predicate_assigned)
         unclassified_item_ids = self.classify_items(item_ids, crowd_votes_counts, item_labels)
         budget_round = len(predicate_assigned)
@@ -26,23 +26,7 @@ class ShortestMultiRun:
         for item_id in item_ids:
             prob_item_in = 1.
             for predicate in self.predicates:
-                preducate_acc = self.estimated_predicate_accuracy[predicate]
-                predicate_select = self.estimated_predicate_selectivity[predicate]
-
-                if hasattr(self, 'prior_prob_pos'):
-                    # TO DO: use machine prior!!!
-                    prior_pred_in = predicate_select
-                else:
-                    prior_pred_in = predicate_select
-                in_c, out_c = [crowd_votes_counts[item_id][predicate][key] for key in ['in', 'out']]
-                if in_c == 0 and out_c == 0:
-                    prob_predicate_in = predicate_select
-                else:
-                    term_in = binom(in_c + out_c, in_c) * preducate_acc ** in_c \
-                               * (1 - preducate_acc) ** out_c * prior_pred_in
-                    term_out = binom(in_c + out_c, out_c) * preducate_acc ** out_c \
-                               * (1 - preducate_acc) ** in_c * (1 - prior_pred_in)
-                    prob_predicate_in = term_in / (term_in + term_out)
+                prob_predicate_in = self._prob_predicate_in(predicate, item_id, crowd_votes_counts)
                 prob_item_in *= prob_predicate_in
             prob_item_out = 1 - prob_item_in
 
@@ -55,7 +39,7 @@ class ShortestMultiRun:
 
         return np.array(unclassified_item_ids)
 
-    def assign_predicates(self, item_ids, crowd_votes_counts, item_labels):
+    def assign_predicates(self, item_ids, crowd_votes_counts):
         predicate_assigned = {}
         for item_id in item_ids:
             classify_score = {}
@@ -83,8 +67,9 @@ class ShortestMultiRun:
 
                     prob_predicate_out = term_out / (term_in + term_out)
 
-                    # TO Experiment!!!
-                    if prob_predicate_out >= self.clf_threshold:
+                    # this is the simplification, tweak out_predicate_threshold to adjust
+                    out_predicate_threshold = 0.9
+                    if prob_predicate_out >= out_predicate_threshold:
                         classify_score[predicate] = n / joint_prob_votes_out[predicate]
                         break
                     elif n == 10:
@@ -107,3 +92,24 @@ class ShortestMultiRun:
                 crowd_votes_counts[item_id][predicate]['in'] += 1
             else:
                 crowd_votes_counts[item_id][predicate]['out'] += 1
+
+    def _prob_predicate_in(self, predicate, item_id, crowd_votes_counts):
+        preducate_acc = self.estimated_predicate_accuracy[predicate]
+        predicate_select = self.estimated_predicate_selectivity[predicate]
+
+        if hasattr(self, 'prior_prob_pos'):
+            # TO DO: use machine prior!!!
+            prior_pred_in = predicate_select
+        else:
+            prior_pred_in = predicate_select
+        in_c, out_c = [crowd_votes_counts[item_id][predicate][key] for key in ['in', 'out']]
+        if in_c == 0 and out_c == 0:
+            prob_predicate_in = predicate_select
+        else:
+            term_in = binom(in_c + out_c, in_c) * preducate_acc ** in_c \
+                      * (1 - preducate_acc) ** out_c * prior_pred_in
+            term_out = binom(in_c + out_c, out_c) * preducate_acc ** out_c \
+                       * (1 - preducate_acc) ** in_c * (1 - prior_pred_in)
+            prob_predicate_in = term_in / (term_in + term_out)
+
+        return prob_predicate_in
