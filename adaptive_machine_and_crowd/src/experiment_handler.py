@@ -44,8 +44,9 @@ def run_experiment(params):
                 'vectorizer': vectorizer
             })
 
-            SAL = configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels)
-            policy.update_budget_al(params['size_init_train_data']*len(predicates)*crowd_votes_per_item)
+            if policy.B_al != 0:
+                SAL = configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels)
+                policy.update_budget_al(params['size_init_train_data']*len(predicates)*crowd_votes_per_item)
             results_list = []
             i = 0
             while policy.is_continue_al:
@@ -66,11 +67,12 @@ def run_experiment(params):
 
             # Get prior from machines
             prior_prob = {}
-            for item_id in range(items_num):
-                prior_prob[item_id] = {}
-                for pr in predicates:
-                    prediction = SAL.learners[pr].learner.predict_proba(vectorizer.transform([X[item_id]]))[0]
-                    prior_prob[item_id][pr] = {'in': prediction[1], 'out': prediction[0]}
+            if policy.B_al != 0:
+                for item_id in range(items_num):
+                    prior_prob[item_id] = {}
+                    for pr in predicates:
+                        prediction = SAL.learners[pr].learner.predict_proba(vectorizer.transform([X[item_id]]))[0]
+                        prior_prob[item_id][pr] = {'in': prediction[1], 'out': prediction[0]}
 
             # DO SM-RUN
             smr_params = {
@@ -87,11 +89,10 @@ def run_experiment(params):
                 'clf_threshold': params['screening_out_threshold'],
                 'stop_score': 30,
                 'crowd_acc': crowd_acc,
+                'prior_prob': prior_prob
             }
             SMR = ShortestMultiRun(smr_params)
-            # unclassified_item_ids = SMR.classify_items(np.arange(items_num), crowd_votes_counts, item_labels)
             unclassified_item_ids = np.arange(items_num)
-            SMR.prior_prob = prior_prob
             while policy.is_continue_crowd and unclassified_item_ids.any():
                 unclassified_item_ids, budget_round = SMR.do_round(crowd_votes_counts, unclassified_item_ids, item_labels)
                 policy.update_budget_crowd(budget_round)

@@ -63,8 +63,8 @@ if __name__ == '__main__':
     dataset_file_name = 'loneliness-dataset-2018.csv'
 
     # # parameters for crowdsourcing simulation
-    crowd_acc = {predicates[0]: [0.8, 1.],
-                 predicates[1]: [0.8, 1.]}
+    crowd_acc = {predicates[0]: [0.7, 1.],
+                 predicates[1]: [0.7, 1.]}
     crowd_votes_per_item = 5
 
     params = {
