@@ -32,7 +32,8 @@ if __name__ == '__main__':
     sampling_strategy = uncertainty_sampling
 
     # Classification parameters
-    screening_out_threshold = 0.95
+    screening_out_threshold = 0.99
+    stop_score = 50  # for SM-Run Algorithm
     beta = 3
     lr = 5
 
@@ -57,7 +58,7 @@ if __name__ == '__main__':
     crowd_votes_per_item = 5
 
     # Experiment parameters
-    shuffling_num = 1
+    shuffling_num = 3
     B = dataset_size * len(predicates) * crowd_votes_per_item
     policies = [PointSwitchPolicy({'name': 'SM-Run',
                                    'B': B,
@@ -83,6 +84,7 @@ if __name__ == '__main__':
         'crowd_acc': crowd_acc,
         'crowd_votes_per_item': crowd_votes_per_item,
         'policies': policies,
+        'stop_score': stop_score
     }
 
     run_experiment(params)

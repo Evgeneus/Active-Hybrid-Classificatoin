@@ -87,7 +87,7 @@ def run_experiment(params):
                 'predicates': predicates,
                 'item_predicate_gt': item_predicate_gt,
                 'clf_threshold': params['screening_out_threshold'],
-                'stop_score': 30,
+                'stop_score': params['stop_score'],
                 'crowd_acc': crowd_acc,
                 'prior_prob': prior_prob
             }
