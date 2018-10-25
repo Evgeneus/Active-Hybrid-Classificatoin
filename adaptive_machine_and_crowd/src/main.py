@@ -32,13 +32,33 @@ if __name__ == '__main__':
     sampling_strategy = uncertainty_sampling
 
     # Classification parameters
-    screening_out_threshold = 0.9
+    screening_out_threshold = 0.95
     beta = 3
     lr = 5
 
+    # # OHUSMED DATASET
+    dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
+    predicates = ['C14', 'C23']
+    dataset_size = 1355
+
+    # # AMAZON DATASET
+    # predicates = ['is_negative', 'is_book']
+    # dataset_file_name = '100000_reviews_lemmatized.csv'
+    # dataset_size = 100000
+
+    # # LONELINESS SLR DATASET
+    # predicates = ['oa_predicate', 'study_predicate']
+    # dataset_file_name = 'loneliness-dataset-2018.csv'
+    # dataset_size = 586
+
+    # # parameters for crowdsourcing simulation
+    crowd_acc = {predicates[0]: [0.7, 1.],
+                 predicates[1]: [0.7, 1.]}
+    crowd_votes_per_item = 5
+
     # Experiment parameters
     shuffling_num = 1
-    B = 10000
+    B = dataset_size * len(predicates) * crowd_votes_per_item
     policies = [PointSwitchPolicy({'name': 'SM-Run',
                                    'B': B,
                                    'B_al_prop': 0.0}),
@@ -49,23 +69,6 @@ if __name__ == '__main__':
                                    'B': B,
                                    'B_al_prop': 0.5})
                 ]
-
-    # # OHUSMED DATASET
-    # dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
-    # predicates = ['C14', 'C23']
-
-    # # AMAZON DATASET
-    # predicates = ['is_negative', 'is_book']
-    # dataset_file_name = '100000_reviews_lemmatized.csv'
-
-    # LONELINESS SLR DATASET
-    predicates = ['oa_predicate', 'study_predicate']
-    dataset_file_name = 'loneliness-dataset-2018.csv'
-
-    # # parameters for crowdsourcing simulation
-    crowd_acc = {predicates[0]: [0.7, 1.],
-                 predicates[1]: [0.7, 1.]}
-    crowd_votes_per_item = 5
 
     params = {
         'dataset_file_name': dataset_file_name,
