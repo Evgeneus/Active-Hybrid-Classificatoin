@@ -45,9 +45,13 @@ class ShortestMultiRun:
             classify_score = {}
             joint_prob_votes_out = {predicate: 1. for predicate in self.predicates}
             for predicate in self.predicates:
+                # set up prob_item
+                _prob_item_in = 1.
+                for pr in [pr for pr in self.predicates if pr != predicate]:
+                    _prob_item_in *= self._prob_predicate_in(pr, item_id, crowd_votes_counts)
+
                 preducate_acc = self.estimated_predicate_accuracy[predicate]
                 predicate_select = self.estimated_predicate_selectivity[predicate]
-
                 if hasattr(self, 'prior_prob_pos'):
                     # TO DO: use machine prior!!!
                     prior_pred_in = predicate_select
@@ -65,11 +69,9 @@ class ShortestMultiRun:
                     term_out = binom(in_c + out_c + n, out_c + n) * preducate_acc ** (out_c + n) \
                                * (1 - preducate_acc) ** in_c * (1 - prior_pred_in)
 
-                    prob_predicate_out = term_out / (term_in + term_out)
-
-                    # this is the simplification, tweak out_predicate_threshold to adjust
-                    out_predicate_threshold = 0.9
-                    if prob_predicate_out >= out_predicate_threshold:
+                    prob_predicate_in = term_in / (term_in + term_out)
+                    prob_item_out = 1 - _prob_item_in * prob_predicate_in
+                    if prob_item_out >= self.clf_threshold:
                         classify_score[predicate] = n / joint_prob_votes_out[predicate]
                         break
                     elif n == 10:
