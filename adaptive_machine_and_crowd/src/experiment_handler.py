@@ -20,7 +20,7 @@ def run_experiment(params):
         print("Policy: {}".format(policy.name))
         print('************************************')
         for experiment_id in range(params['shuffling_num']):
-            policy.B_al_spent,  policy.B_crowd_spent = 0, 0
+            policy.reset()
 
             X, y_screening, y_predicate = load_data(params['dataset_file_name'], predicates)
             vectorizer = Vectorizer()

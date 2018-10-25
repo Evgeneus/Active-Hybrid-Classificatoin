@@ -14,6 +14,10 @@ class PointSwitchPolicy:
     def update_budget_crowd(self, money_spent):
         self.B_crowd_spent += money_spent
 
+    def reset(self):
+        self.B_al_spent = 0
+        self.B_crowd_spent = 0
+
     @property
     def is_continue_al(self):
         if self.B_al_spent >= self.B_al:
