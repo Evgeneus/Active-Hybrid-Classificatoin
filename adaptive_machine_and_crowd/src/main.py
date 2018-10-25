@@ -39,7 +39,7 @@ if __name__ == '__main__':
     # # OHUSMED DATASET
     dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
     predicates = ['C14', 'C23']
-    dataset_size = 1355
+    dataset_size = 34387
 
     # # AMAZON DATASET
     # predicates = ['is_negative', 'is_book']
