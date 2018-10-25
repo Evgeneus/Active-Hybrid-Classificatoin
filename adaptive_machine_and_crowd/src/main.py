@@ -32,19 +32,22 @@ if __name__ == '__main__':
     sampling_strategy = uncertainty_sampling
 
     # Classification parameters
-    screening_out_threshold = 0.99
+    screening_out_threshold = 0.9
     beta = 3
     lr = 5
 
     # Experiment parameters
-    shuffling_num = 2
+    shuffling_num = 1
     B = 10000
-    policies = [PointSwitchPolicy({'name': 'PSP: 30%AL/70%CR',
+    policies = [PointSwitchPolicy({'name': 'SM-Run',
                                    'B': B,
-                                   'B_al_prop': 0.3}),
-                # PointSwitchPolicy({'name': 'PSP: 50%AL/50%CR',
-                #                    'B': B,
-                #                    'B_al_prop': 0.5})
+                                   'B_al_prop': 0.0}),
+                PointSwitchPolicy({'name': 'PSP: 30%AL/70%CR',
+                                   'B': B,
+                                   'B_al_prop': 0.1}),
+                PointSwitchPolicy({'name': 'PSP: 50%AL/50%CR',
+                                   'B': B,
+                                   'B_al_prop': 0.5})
                 ]
 
     # # OHUSMED DATASET
@@ -60,8 +63,8 @@ if __name__ == '__main__':
     dataset_file_name = 'loneliness-dataset-2018.csv'
 
     # # parameters for crowdsourcing simulation
-    crowd_acc = {predicates[0]: [0.7, 1.],
-                 predicates[1]: [0.7, 1.]}
+    crowd_acc = {predicates[0]: [0.8, 1.],
+                 predicates[1]: [0.8, 1.]}
     crowd_votes_per_item = 5
 
     params = {

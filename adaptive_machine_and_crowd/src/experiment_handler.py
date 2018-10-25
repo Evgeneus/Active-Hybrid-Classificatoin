@@ -64,24 +64,34 @@ def run_experiment(params):
                 i += 1
             print('experiment_id {}, AL-Box finished'.format(experiment_id), end=', ')
 
+            # Get prior from machines
+            prior_prob = {}
+            for item_id in range(items_num):
+                prior_prob[item_id] = {}
+                for pr in predicates:
+                    prediction = SAL.learners[pr].learner.predict_proba(vectorizer.transform([X[item_id]]))[0]
+                    prior_prob[item_id][pr] = {'in': prediction[1], 'out': prediction[0]}
+
             # DO SM-RUN
             smr_params = {
                 'estimated_predicate_accuracy': {
-                    predicates[0]: 0.9,
-                    predicates[1]: 0.9
+                    predicates[0]: sum(crowd_acc[predicates[0]])/len(crowd_acc[predicates[0]]),
+                    predicates[1]: sum(crowd_acc[predicates[1]])/len(crowd_acc[predicates[1]])
                 },
                 'estimated_predicate_selectivity': {
-                    predicates[0]: 0.30,
-                    predicates[1]: 0.50
+                    predicates[0]: sum(y_predicate[predicates[0]])/len(y_predicate[predicates[0]]),
+                    predicates[1]: sum(y_predicate[predicates[1]])/len(y_predicate[predicates[1]])
                 },
                 'predicates': predicates,
                 'item_predicate_gt': item_predicate_gt,
-                'clf_threshold': 0.99,
-                'stop_score': 300,
-                'crowd_acc': crowd_acc
+                'clf_threshold': params['screening_out_threshold'],
+                'stop_score': 30,
+                'crowd_acc': crowd_acc,
             }
             SMR = ShortestMultiRun(smr_params)
-            unclassified_item_ids = SMR.classify_items(np.arange(items_num), crowd_votes_counts, item_labels)
+            # unclassified_item_ids = SMR.classify_items(np.arange(items_num), crowd_votes_counts, item_labels)
+            unclassified_item_ids = np.arange(items_num)
+            SMR.prior_prob = prior_prob
             while policy.is_continue_crowd and unclassified_item_ids.any():
                 unclassified_item_ids, budget_round = SMR.do_round(crowd_votes_counts, unclassified_item_ids, item_labels)
                 policy.update_budget_crowd(budget_round)

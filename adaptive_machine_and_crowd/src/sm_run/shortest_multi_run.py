@@ -13,12 +13,14 @@ class ShortestMultiRun:
         self.stop_score = params['stop_score']
         self.crowd_acc_range = params['crowd_acc']
         self.item_predicate_gt = params['item_predicate_gt']
+        self.prior_prob = params.get('prior_prob', None)
 
     def do_round(self, crowd_votes_counts, item_ids, item_labels):
         predicate_assigned = self.assign_predicates(item_ids, crowd_votes_counts)
         self.crowdsource_items(crowd_votes_counts, predicate_assigned)
-        unclassified_item_ids = self.classify_items(item_ids, crowd_votes_counts, item_labels)
+        unclassified_item_ids = self.classify_items(predicate_assigned.keys(), crowd_votes_counts, item_labels)
         budget_round = len(predicate_assigned)
+
         return unclassified_item_ids, budget_round
 
     def classify_items(self, item_ids, crowd_votes_counts, item_labels):
@@ -52,10 +54,9 @@ class ShortestMultiRun:
 
                 preducate_acc = self.estimated_predicate_accuracy[predicate]
                 predicate_select = self.estimated_predicate_selectivity[predicate]
-                if hasattr(self, 'prior_prob_pos'):
-                    # TO DO: use machine prior!!!
-                    prior_pred_in = predicate_select
-                    prob_pred_out = 1 - predicate_select
+                if self.prior_prob:
+                    prior_pred_in = self.prior_prob[item_id][predicate]['in']
+                    prob_pred_out = 1 - prior_pred_in
                 else:
                     prob_pred_out = 1 - predicate_select
                     prior_pred_in = predicate_select
@@ -99,9 +100,8 @@ class ShortestMultiRun:
         preducate_acc = self.estimated_predicate_accuracy[predicate]
         predicate_select = self.estimated_predicate_selectivity[predicate]
 
-        if hasattr(self, 'prior_prob_pos'):
-            # TO DO: use machine prior!!!
-            prior_pred_in = predicate_select
+        if self.prior_prob:
+            prior_pred_in = self.prior_prob[item_id][predicate]['in']
         else:
             prior_pred_in = predicate_select
         in_c, out_c = [crowd_votes_counts[item_id][predicate][key] for key in ['in', 'out']]
