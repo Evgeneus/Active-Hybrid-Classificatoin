@@ -209,4 +209,4 @@ def transform_print(data_df, file_name):
 
         df_to_print = df_to_print.append(df_to_print_)
 
-    df_to_print.to_csv('../output/adaptive_machines_and_crowd/{}.csv'.format(file_name), index=False)
+    df_to_print.to_csv('../output/adaptive_machines_and_crowd/{}_3votesAL.csv'.format(file_name), index=False)

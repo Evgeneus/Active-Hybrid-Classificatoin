@@ -92,7 +92,7 @@ def run_experiment(params):
                 'prior_prob': prior_prob
             }
             SMR = ShortestMultiRun(smr_params)
-            unclassified_item_ids = np.arange(items_num)
+            unclassified_item_ids = SMR.classify_items(np.arange(items_num), crowd_votes_counts, item_labels)
             while policy.is_continue_crowd and unclassified_item_ids.any():
                 unclassified_item_ids, budget_round = SMR.do_round(crowd_votes_counts, unclassified_item_ids, item_labels)
                 policy.update_budget_crowd(budget_round)
@@ -102,7 +102,16 @@ def run_experiment(params):
             metrics = MetricsMixin.compute_screening_metrics(y_screening_dict, item_labels,
                                                              params['lr'], params['beta'])
             pre, rec, f_beta, loss, fn_count, fp_count = metrics
-            budget_spent_item = (policy.B_al_spent + policy.B_crowd_spent) / items_num
+
+            # TO Consider cost of Baseround of SM-Run
+            if policy.B_al == 0:
+                baseround_item_num = 50
+                smr_udget = policy.B_crowd_spent - baseround_item_num * (policy.B_crowd_spent / items_num) \
+                            + baseround_item_num * len(predicates) * crowd_votes_per_item
+                budget_spent_item = smr_udget / items_num
+
+            else:
+                budget_spent_item = (policy.B_al_spent + policy.B_crowd_spent) / items_num
             results_list.append([budget_spent_item, pre, rec, f_beta, loss, fn_count,
                                  fp_count, params['sampling_strategy'].__name__,
                                  policy.name])

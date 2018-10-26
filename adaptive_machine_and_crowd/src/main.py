@@ -26,9 +26,9 @@ from adaptive_machine_and_crowd.src.experiment_handler import run_experiment
 
 if __name__ == '__main__':
     # Parameters for active learners
-    n_instances_query = 20
+    n_instances_query = 100
     size_init_train_data = 20
-    sampling_strategy = random_sampling
+    sampling_strategy = objective_aware_sampling
 
     # Classification parameters
     screening_out_threshold = 0.99
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     # # parameters for crowdsourcing simulation
     crowd_acc = {predicates[0]: [0.7, 1.],
                  predicates[1]: [0.7, 1.]}
-    crowd_votes_per_item = 5
+    crowd_votes_per_item = 3
 
     # Experiment parameters
     shuffling_num = 10
