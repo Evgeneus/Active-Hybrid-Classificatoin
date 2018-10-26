@@ -113,7 +113,7 @@ def run_experiment(params):
             else:
                 budget_spent_item = (policy.B_al_spent + policy.B_crowd_spent) / items_num
             results_list.append([budget_spent_item, pre, rec, f_beta, loss, fn_count,
-                                 fp_count, params['sampling_strategy'].__name__,
+                                 fp_count, params['sampling_strategy'].__name__ if policy.B_al != 0 else 'SM-Run',
                                  policy.name])
 
             print('budget_spent: {:1.3f}, loss: {:1.3f}, fbeta: {:1.3f}, '
