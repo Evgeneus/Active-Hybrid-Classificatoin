@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
     ## AMAZON DATASET
     # predicates = ['is_negative', 'is_book']
-    # file_name = '100000_reviews_lemmatized.csv'
+    # file_name = '100000_reviews_lemmatized_old.csv'
 
     ## LONELINESS SLR DATASET
     # predicates = ['oa_predicate', 'study_predicate']

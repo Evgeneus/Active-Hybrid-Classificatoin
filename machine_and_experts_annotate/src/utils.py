@@ -62,7 +62,7 @@ class MetricsMixin:
 
 def load_data(file_name, predicates):
     path_dict = {
-        '100000_reviews_lemmatized.csv': '../../data/amazon-sentiment-dataset/',
+        '100000_reviews_lemmatized_old.csv': '../../data/amazon-sentiment-dataset/',
         'ohsumed_C04_C12_1grams.csv': '../../data/ohsumed_data/',
         'ohsumed_C10_C23_1grams.csv': '../../data/ohsumed_data/',
         'ohsumed_C14_C23_1grams.csv': '../../data/ohsumed_data/',

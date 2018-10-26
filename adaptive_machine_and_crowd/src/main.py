@@ -27,9 +27,8 @@ from adaptive_machine_and_crowd.src.experiment_handler import run_experiment
 if __name__ == '__main__':
     # Parameters for active learners
     n_instances_query = 20
-    n_queries = 100
     size_init_train_data = 20
-    sampling_strategy = uncertainty_sampling
+    sampling_strategy = random_sampling
 
     # Classification parameters
     screening_out_threshold = 0.99
@@ -37,15 +36,15 @@ if __name__ == '__main__':
     beta = 3
     lr = 5
 
-    # # OHUSMED DATASET
-    dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
-    predicates = ['C14', 'C23']
-    dataset_size = 34387
+    # # # OHUSMED DATASET
+    # dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
+    # predicates = ['C14', 'C23']
+    # dataset_size = 34387
 
-    # # AMAZON DATASET
-    # predicates = ['is_negative', 'is_book']
-    # dataset_file_name = '100000_reviews_lemmatized.csv'
-    # dataset_size = 100000
+    # AMAZON DATASET
+    predicates = ['is_negative', 'is_book']
+    dataset_file_name = '5000_reviews_lemmatized.csv'
+    dataset_size = 5000
 
     # # LONELINESS SLR DATASET
     # predicates = ['oa_predicate', 'study_predicate']
@@ -58,17 +57,21 @@ if __name__ == '__main__':
     crowd_votes_per_item = 5
 
     # Experiment parameters
-    shuffling_num = 3
+    shuffling_num = 10
     B = dataset_size * len(predicates) * crowd_votes_per_item
-    policies = [PointSwitchPolicy({'name': 'SM-Run',
+    policies = [
+        PointSwitchPolicy({'name': 'SM-Run',
                                    'B': B,
                                    'B_al_prop': 0.0}),
                 PointSwitchPolicy({'name': 'PSP: 30%AL/70%CR',
                                    'B': B,
-                                   'B_al_prop': 0.1}),
+                                   'B_al_prop': 0.3}),
                 PointSwitchPolicy({'name': 'PSP: 50%AL/50%CR',
                                    'B': B,
-                                   'B_al_prop': 0.5})
+                                   'B_al_prop': 0.5}),
+                PointSwitchPolicy({'name': 'PSP: 70%AL/30%CR',
+                                   'B': B,
+                                   'B_al_prop': 0.7})
                 ]
 
     params = {
