@@ -173,13 +173,13 @@ def mix_sampling(classifier, X, learners_, n_instances=1, **uncertainty_measure_
 
 def transform_print(data_df, file_name):
     # compute mean and std, and median over results
-    columns = ['budget_spent_mean', 'precision_mean', 'recall_mean', 'f_beta_mean',
-               'loss_mean', 'fn_count_mean', 'fp_count_mean']
+    columns = ['budget_per_item', 'budget_spent_per_item_mean', 'precision_mean', 'recall_mean',
+               'f_beta_mean', 'loss_mean', 'fn_count_mean', 'fp_count_mean', 'AL_switch_point']
     df_concat = pd.concat(data_df)
-    policies = df_concat['policy'].unique()
+    policies = df_concat['AL_switch_point'].unique()
     df_to_print = pd.DataFrame([], columns=columns)
     for policy in policies:
-        df_policy = df_concat[df_concat['policy'] == policy]
+        df_policy = df_concat[df_concat['AL_switch_point'] == policy]
         by_row_index = df_policy.groupby(df_policy.index)
         df_means = by_row_index.mean()
         df_std = by_row_index.std()
@@ -194,7 +194,7 @@ def transform_print(data_df, file_name):
         df_to_print_['loss_median'] = df_median['loss']
         df_to_print_['fn_count_median'] = df_median['fn_count']
         df_to_print_['fp_count_median'] = df_median['fp_count']
-        df_to_print_['budget_spent_median'] = df_median['budget_spent']
+        df_to_print_['budget_spent_per_item_median'] = df_median['budget_spent_per_item']
 
         df_to_print_['precision_std'] = df_std['precision']
         df_to_print_['recall_std'] = df_std['recall']
@@ -202,11 +202,8 @@ def transform_print(data_df, file_name):
         df_to_print_['loss_std'] = df_std['loss']
         df_to_print_['fn_count_std'] = df_std['fn_count']
         df_to_print_['fp_count_std'] = df_std['fp_count']
-        df_to_print_['budget_spent_std'] = df_std['budget_spent']
-        df_to_print_['policy'] = policy
-        df_to_print_['sampling_strategy'] = data_df[0]['sampling_strategy'].values[0]
-
-
+        df_to_print_['budget_spent_per_item_std'] = df_std['budget_spent_per_item']
+        df_to_print_['active_learning_strategy'] = data_df[-1]['active_learning_strategy'].values[0]
         df_to_print = df_to_print.append(df_to_print_)
 
-    df_to_print.to_csv('../output/adaptive_machines_and_crowd/{}_3votesAL.csv'.format(file_name), index=False)
+    df_to_print.to_csv('../output/adaptive_machines_and_crowd/{}.csv'.format(file_name), index=False)

@@ -1,9 +1,8 @@
 class PointSwitchPolicy:
 
-    def __init__(self, params):
-        self.name = params['name']
-        self.B = params['B']
-        self.B_al = round(self.B * params['B_al_prop'])
+    def __init__(self, B, switch_point):
+        self.B = B
+        self.B_al = round(self.B * switch_point)
         self.B_crowd = self.B - self.B_al
         self.B_al_spent = 0
         self.B_crowd_spent = 0
@@ -13,10 +12,6 @@ class PointSwitchPolicy:
 
     def update_budget_crowd(self, money_spent):
         self.B_crowd_spent += money_spent
-
-    def reset(self):
-        self.B_al_spent = 0
-        self.B_crowd_spent = 0
 
     @property
     def is_continue_al(self):
