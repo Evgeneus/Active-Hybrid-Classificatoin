@@ -171,7 +171,7 @@ def mix_sampling(classifier, X, learners_, n_instances=1, **uncertainty_measure_
     return query_idx, X[query_idx]
 
 
-def transform_print(data_df, file_name):
+def transform_print(data_df):
     # compute mean and std, and median over results
     columns = ['budget_per_item', 'budget_spent_per_item_mean', 'precision_mean', 'recall_mean',
                'f_beta_mean', 'loss_mean', 'fn_count_mean', 'fp_count_mean', 'AL_switch_point']
@@ -206,4 +206,4 @@ def transform_print(data_df, file_name):
         df_to_print_['active_learning_strategy'] = data_df[-1]['active_learning_strategy'].values[0]
         df_to_print = df_to_print.append(df_to_print_)
 
-    df_to_print.to_csv('../output/adaptive_machines_and_crowd/{}.csv'.format(file_name), index=False)
+    return df_to_print

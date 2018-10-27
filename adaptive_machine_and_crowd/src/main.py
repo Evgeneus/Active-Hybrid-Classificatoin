@@ -36,14 +36,14 @@ if __name__ == '__main__':
     beta = 3
     lr = 5
 
-    # # # OHUSMED DATASET
+    # # OHUSMED DATASET
     # dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
     # predicates = ['C14', 'C23']
     # dataset_size = 34387
     # crowd_acc = {predicates[0]: [0.6, 1.],
     #              predicates[1]: [0.6, 1.]}
 
-    # AMAZON DATASET
+    # # AMAZON DATASET
     predicates = ['is_negative', 'is_book']
     dataset_file_name = '5000_reviews_lemmatized.csv'
     dataset_size = 5000
