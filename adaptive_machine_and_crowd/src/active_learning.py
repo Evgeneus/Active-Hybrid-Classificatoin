@@ -167,10 +167,10 @@ class ScreeningActiveLearner:
             proba_in *= l.learner.predict_proba(X)[:, 1]
         proba = np.stack((1-proba_in, proba_in), axis=1)
 
-        return proba
+        return np.array(proba)
 
     def predict(self, X):
         proba_out = self.predict_proba(X)[:, 0]
         predicted = [0 if p > self.screening_out_threshold else 1 for p in proba_out]
 
-        return predicted
+        return np.array(predicted)
