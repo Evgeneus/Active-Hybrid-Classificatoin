@@ -31,7 +31,7 @@ if __name__ == '__main__':
     sampling_strategy = objective_aware_sampling
 
     # Classification parameters
-    screening_out_threshold = 0.99
+    screening_out_threshold = 0.99  # for SM-Run
     stop_score = 50  # for SM-Run Algorithm
     beta = 3
     lr = 5
@@ -45,6 +45,8 @@ if __name__ == '__main__':
     predicates = ['is_negative', 'is_book']
     dataset_file_name = '5000_reviews_lemmatized.csv'
     dataset_size = 5000
+    crowd_acc = {predicates[0]: [0.96, 0.96],
+                 predicates[1]: [0.96, 0.96]}
 
     # # LONELINESS SLR DATASET
     # predicates = ['oa_predicate', 'study_predicate']
@@ -52,15 +54,15 @@ if __name__ == '__main__':
     # dataset_size = 586
 
     # # parameters for crowdsourcing simulation
-    crowd_acc = {predicates[0]: [0.7, 1.],
-                 predicates[1]: [0.7, 1.]}
+    # crowd_acc = {predicates[0]: [0.7, 1.],
+    #              predicates[1]: [0.7, 1.]}
     crowd_votes_per_item = 3
 
     # Experiment parameters
     shuffling_num = 10
     B = dataset_size * len(predicates) * crowd_votes_per_item
     policies = [
-        PointSwitchPolicy({'name': 'SM-Run',
+                PointSwitchPolicy({'name': 'SM-Run',
                                    'B': B,
                                    'B_al_prop': 0.0}),
                 PointSwitchPolicy({'name': 'PSP: 30%AL/70%CR',

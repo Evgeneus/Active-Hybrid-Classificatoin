@@ -14,6 +14,7 @@ class ShortestMultiRun:
         self.crowd_acc_range = params['crowd_acc']
         self.item_predicate_gt = params['item_predicate_gt']
         self.prior_prob = params.get('prior_prob', None)
+        self.max_votes_per_item = 20
 
     def do_round(self, crowd_votes_counts, item_ids, item_labels):
         predicate_assigned = self.assign_predicates(item_ids, crowd_votes_counts)
@@ -44,9 +45,11 @@ class ShortestMultiRun:
     def assign_predicates(self, item_ids, crowd_votes_counts):
         predicate_assigned = {}
         for item_id in item_ids:
+            crowdsourced_votes_num = 0
             classify_score = {}
             joint_prob_votes_out = {predicate: 1. for predicate in self.predicates}
             for predicate in self.predicates:
+                crowdsourced_votes_num += sum(crowd_votes_counts[item_id][predicate].values())
                 # set up prob_item
                 _prob_item_in = 1.
                 for pr in [pr for pr in self.predicates if pr != predicate]:
@@ -79,7 +82,7 @@ class ShortestMultiRun:
                         classify_score[predicate] = n / joint_prob_votes_out[predicate]
 
             predicate_best_score = min(classify_score, key=classify_score.get)
-            if classify_score[predicate_best_score] < self.stop_score:
+            if classify_score[predicate_best_score] < self.stop_score and crowdsourced_votes_num < self.max_votes_per_item:
                 predicate_assigned[item_id] = predicate_best_score
 
         return predicate_assigned
