@@ -15,7 +15,8 @@ class PointSwitchPolicy:
 
     @property
     def is_continue_al(self):
-        if self.B_al_spent >= self.B_al:
+        # Hot Fix: To do
+        if self.B_al_spent + 300 >= self.B_al:
             return False
         else:
             return True

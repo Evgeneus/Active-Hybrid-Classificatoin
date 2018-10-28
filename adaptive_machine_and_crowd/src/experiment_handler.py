@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
 
-from adaptive_machine_and_crowd.src.utils import transform_print, get_init_training_data_idx, \
+from adaptive_machine_and_crowd.src.utils import get_init_training_data_idx, \
     load_data, Vectorizer, CrowdSimulator, MetricsMixin
 from adaptive_machine_and_crowd.src.active_learning import Learner, ScreeningActiveLearner
 from adaptive_machine_and_crowd.src.sm_run.shortest_multi_run import ShortestMultiRun
@@ -18,14 +18,13 @@ def run_experiment(params):
     screening_out_threshold_machines = 0.9
 
     df_to_print = pd.DataFrame()
-    results_df = []
     for budget_per_item in params['budget_per_item']:
-        # budget_per_item = params['budget_per_item'][5]
         B = params['dataset_size'] * budget_per_item
         for switch_point in params['policy_switch_point']:
             print('Policy switch point: {}'.format(switch_point))
             print('Budget per item: {}'.format(budget_per_item))
             print('************************************')
+            results_list = []
             for experiment_id in range(params['experiment_nums']):
                 policy = PointSwitchPolicy(B, switch_point)
 
@@ -50,7 +49,6 @@ def run_experiment(params):
                     'y_predicate': y_predicate,
                     'vectorizer': vectorizer
                 })
-                results_list = []
 
                 # if Available Budget for Active Learniong is available then Do Run Active Learning Box
                 if switch_point != 0:
@@ -75,16 +73,16 @@ def run_experiment(params):
 
                     unclassified_item_ids = np.arange(items_num)
                     # Get prior from machines
-                    if switch_point != 0:
-                        for item_id in range(items_num):
-                            prior_prob[item_id] = {}
-                            for pr in predicates:
-                                prediction = SAL.learners[pr].learner.predict_proba(vectorizer.transform([X[item_id]]))[0]
-                                prior_prob[item_id][pr] = {'in': prediction[1], 'out': prediction[0]}
+                    for item_id in range(items_num):
+                        prior_prob[item_id] = {}
+                        for pr in predicates:
+                            prediction = SAL.learners[pr].learner.predict_proba(vectorizer.transform([X[item_id]]))[0]
+                            prior_prob[item_id][pr] = {'in': prediction[1], 'out': prediction[0]}
                     print('experiment_id {}, AL-Box finished'.format(experiment_id), end=', ')
 
                 # if Available Budget for Crowd-Box DO SM-RUN
                 if policy.B_crowd:
+                    policy.B_crowd = policy.B - policy.B_al_spent
                     smr_params = {
                         'estimated_predicate_accuracy': {
                             predicates[0]: sum(crowd_acc[predicates[0]])/len(crowd_acc[predicates[0]]),
@@ -115,6 +113,9 @@ def run_experiment(params):
                     unclassified_item_ids = SMR.classify_items(unclassified_item_ids, crowd_votes_counts, item_labels)
 
                     while policy.is_continue_crowd and unclassified_item_ids.any():
+                        # Check money
+                        if (policy.B_crowd - policy.B_crowd_spent) < len(unclassified_item_ids):
+                            unclassified_item_ids = unclassified_item_ids[:(policy.B_crowd - policy.B_crowd_spent)]
                         unclassified_item_ids, budget_round = SMR.do_round(crowd_votes_counts, unclassified_item_ids, item_labels)
                         policy.update_budget_crowd(budget_round)
                     print('Crowd-Box finished')
@@ -129,22 +130,21 @@ def run_experiment(params):
                 pre, rec, f_beta, loss, fn_count, fp_count = metrics
                 budget_spent_item = (policy.B_al_spent + policy.B_crowd_spent) / items_num
                 results_list.append([budget_per_item, budget_spent_item, pre, rec, f_beta, loss, fn_count,
-                                     fp_count, params['sampling_strategy'].__name__ if switch_point != 0 else '',
-                                     switch_point])
+                                     fp_count, switch_point])
 
                 print('budget spent per item: {:1.3f}, loss: {:1.3f}, fbeta: {:1.3f}, '
                       'recall: {:1.3f}, precisoin: {:1.3f}'
                       .format(budget_spent_item, loss, f_beta, rec, pre))
                 print('--------------------------------------------------------------')
-                results_df.append(pd.DataFrame(results_list, columns=['budget_per_item', 'budget_spent_per_item',
-                                                                      'precision', 'recall', 'f_beta', 'loss',
-                                                                      'fn_count', 'fp_count',
-                                                                      'active_learning_strategy',
-                                                                      'AL_switch_point']))
 
-        df_to_print = df_to_print.append(transform_print(results_df))
-    file_name = params['dataset_file_name'][:-4] + '_experiment_nums_{}_ninstq_{}'.format(params['experiment_nums'],
-                                                                                          params['n_instances_query'])
+            df = pd.DataFrame(results_list, columns=['budget_per_item', 'budget_spent_per_item',
+                                                     'precision', 'recall', 'f_beta', 'loss',
+                                                     'fn_count', 'fp_count', 'AL_switch_point'])
+            df = compute_mean_std(df)
+            df['active_learning_strategy'] = params['sampling_strategy'].__name__ if switch_point != 0 else ''
+            df_to_print = df_to_print.append(df, ignore_index=True)
+
+    file_name = params['dataset_file_name'][:-4] + '_experiment_nums_{}_ninstq_{}'.format(params['experiment_nums'],                                                                                        params['n_instances_query'])
     df_to_print.to_csv('../output/adaptive_machines_and_crowd/{}.csv'.format(file_name), index=False)
 
 
@@ -188,3 +188,15 @@ def configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels):
     # SAL.init_stat()  # initialize statistic for predicates, uncomment if use predicate selection feature
 
     return SAL
+
+
+def compute_mean_std(df):
+    columns_mean = [c + '_mean' for c in df.columns]
+    columns_median = [c + '_median' for c in df.columns]
+    columns_std = [c + '_std' for c in df.columns]
+    old_columns = df.columns.values
+    df_mean = df.mean().rename(dict(zip(old_columns, columns_mean)))
+    df_std = df.std().rename(dict(zip(old_columns, columns_std)))
+    df_median = df.median().rename(dict(zip(old_columns, columns_median)))
+
+    return pd.concat([df_mean, df_std, df_median])
