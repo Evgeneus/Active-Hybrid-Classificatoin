@@ -43,17 +43,19 @@ if __name__ == '__main__':
     # crowd_acc = {predicates[0]: [0.6, 1.],
     #              predicates[1]: [0.6, 1.]}
 
-    # # AMAZON DATASET
-    predicates = ['is_negative', 'is_book']
-    dataset_file_name = '5000_reviews_lemmatized.csv'
-    dataset_size = 5000
-    crowd_acc = {predicates[0]: [0.96, 0.96],
-                 predicates[1]: [0.96, 0.96]}
+    # # # AMAZON DATASET
+    # predicates = ['is_negative', 'is_book']
+    # dataset_file_name = '5000_reviews_lemmatized.csv'
+    # dataset_size = 5000
+    # crowd_acc = {predicates[0]: [0.96, 0.96],
+    #              predicates[1]: [0.96, 0.96]}
 
-    # # LONELINESS SLR DATASET
-    # predicates = ['oa_predicate', 'study_predicate']
-    # dataset_file_name = 'loneliness-dataset-2018.csv'
-    # dataset_size = 586
+    # LONELINESS SLR DATASET
+    predicates = ['oa_predicate', 'study_predicate']
+    dataset_file_name = 'loneliness-dataset-2018.csv'
+    dataset_size = 825
+    crowd_acc = {predicates[0]: [0.8, 0.8],
+                 predicates[1]: [0.6, 0.6]}
 
 
     # Experiment parameters
