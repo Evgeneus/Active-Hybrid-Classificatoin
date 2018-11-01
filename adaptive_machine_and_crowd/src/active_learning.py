@@ -68,7 +68,8 @@ class ChoosePredicateMixin:
     def select_predicate_stop(self, param):
         predicates_to_train = []
         for predicate in self.predicates:
-            if (self.stat[predicate]['f_beta'][-1] - self.stat[predicate]['f_beta'][-10]) >= 0.02:
+            if (self.stat[predicate]['f_beta'][-1] - self.stat[predicate]['f_beta'][-10]) >= 0.02\
+                    and len(self.learners[predicate].y_pool) >= self.n_instances_query:
                 predicates_to_train.append(predicate)
         if not predicates_to_train:
             return None
