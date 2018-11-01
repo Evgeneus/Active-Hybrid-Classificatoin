@@ -56,7 +56,14 @@ def run_experiment(params):
                     SAL.screening_out_threshold = screening_out_threshold_machines
                     i = 0
                     while policy.is_continue_al:
-                        # SAL.update_stat()  # uncomment if use predicate selection feature
+                        # SAL.update_stat()  # uncomment if use adaptive policy
+                        # if i < 20:
+                        #     pr = SAL.select_predicate(i)
+                        # else:
+                        #     pr = SAL.select_predicate_stop(i)
+                        #     print(pr)
+                        # if pr == None:
+                        #     break
                         pr = SAL.select_predicate(i)
                         query_idx = SAL.query(pr)
 
@@ -84,8 +91,8 @@ def run_experiment(params):
                     policy.B_crowd = policy.B - policy.B_al_spent
                     smr_params = {
                         'estimated_predicate_accuracy': {
-                            predicates[0]: 0.96,
-                            predicates[1]: 0.96
+                            predicates[0]: 0.94,
+                            predicates[1]: 0.94
                         },
                         'estimated_predicate_selectivity': {
                             predicates[0]: sum(y_predicate[predicates[0]])/len(y_predicate[predicates[0]]),
@@ -182,6 +189,7 @@ def configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels, c
 
     params.update({'learners': learners})
     SAL = ScreeningActiveLearner(params)
+    #  uncomment if use adaptive policy
     # SAL.init_stat()  # initialize statistic for predicates, uncomment if use predicate selection feature
 
     return SAL, votes_num
