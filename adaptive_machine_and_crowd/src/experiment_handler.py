@@ -57,6 +57,8 @@ def run_experiment(params):
                     i = 0
                     while policy.is_continue_al:
                         # SAL.update_stat()  # uncomment if use adaptive policy
+                        # if (policy.B - policy.B_al_spent) <= items_num:
+                        #     break
                         # if i < 20:
                         #     pr = SAL.select_predicate(i)
                         # else:
@@ -119,7 +121,7 @@ def run_experiment(params):
                     while policy.is_continue_crowd and unclassified_item_ids.any():
                         # Check money
                         if (policy.B_crowd - policy.B_crowd_spent) < len(unclassified_item_ids):
-                            unclassified_item_ids = unclassified_item_ids[:(policy.B_crowd - policy.B_crowd_spent)]
+                            unclassified_item_ids = unclassified_item_ids[:int((policy.B_crowd - policy.B_crowd_spent))]
                         unclassified_item_ids, budget_round = SMR.do_round(crowd_votes, crowd_votes_counts, unclassified_item_ids, item_labels)
                         policy.update_budget_crowd(budget_round)
                     print('Crowd-Box finished')
