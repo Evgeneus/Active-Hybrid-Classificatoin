@@ -3,7 +3,6 @@ import pandas as pd
 import warnings, random
 
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import confusion_matrix
 
 
 class Vectorizer():
@@ -18,6 +17,27 @@ class Vectorizer():
 
     def fit_transform(self, X):
         return self.vectorizer.fit_transform(X).toarray()
+
+
+def crowdsource_items_al(crowd_votes, crowd_votes_counts, item_ids, predicate, n):
+    crodsourced_items = []
+    votes_num = 0
+    for item_id in item_ids:
+        in_votes, out_votes = 0, 0
+        for _ in range(n):
+            vote_list = crowd_votes[item_id][predicate]
+            if vote_list:
+                vote = vote_list.pop()
+                if vote == 1:
+                    in_votes += 1
+                else:
+                    out_votes += 1
+        votes_num += in_votes + out_votes
+        item_label = 1 if in_votes >= out_votes else 0
+        crowd_votes_counts[item_id][predicate]['in'] += in_votes
+        crowd_votes_counts[item_id][predicate]['out'] += out_votes
+        crodsourced_items.append(item_label)
+    return crodsourced_items, votes_num
 
 
 class CrowdSimulator:
@@ -84,14 +104,6 @@ class MetricsMixin:
 
         return precision, recall, fbeta, loss, fn, fp
 
-    # @staticmethod
-    # def compute_tpr_tnr(gt, predicted):
-    #     tn, fp, fn, tp = confusion_matrix(gt, predicted).ravel()
-    #     TPR = tp / (tp + fn)  # sensitivity, recall, or true positive rate
-    #     TNR = tn / (tn + fp)  # specificity or true negative rate
-    #
-    #     return TPR, TNR
-
 
 def load_data(file_name, predicates):
     path_dict = {
@@ -100,7 +112,8 @@ def load_data(file_name, predicates):
         'ohsumed_C04_C12_1grams.csv': '../../data/ohsumed_data/',
         'ohsumed_C10_C23_1grams.csv': '../../data/ohsumed_data/',
         'ohsumed_C14_C23_1grams.csv': '../../data/ohsumed_data/',
-        'loneliness-dataset-2018.csv': '../../data/loneliness-dataset-2018/'
+        'loneliness-dataset-2018.csv': '../../data/loneliness-dataset-2018/',
+        '1k_amazon_reviews_crowdsourced_lemmatized.csv': '../../data/amazon-sentiment-dataset/'
     }
     path = path_dict[file_name]
     data = pd.read_csv(path + file_name)
@@ -109,8 +122,17 @@ def load_data(file_name, predicates):
     y_predicate = {}  # gt labels per predicate
     for pr in predicates:
         y_predicate[pr] = data[pr].values
+    crowd_votes = {}
+    for item_id in range(len(y_screening)):
+        crowd_votes[item_id] = {}
+        for pr in predicates:
+            in_num = data.loc[data['item_id'] == item_id][pr + '_in'].values[0]
+            out_num = data.loc[data['item_id'] == item_id][pr + '_out'].values[0]
+            votes = [1]*in_num + [0]*out_num
+            random.shuffle(votes)
+            crowd_votes[item_id][pr] = votes
 
-    return X, y_screening, y_predicate
+    return X, y_screening, y_predicate, crowd_votes
 
 
 def get_init_training_data_idx(y_screening, y_predicate_train, init_train_size):

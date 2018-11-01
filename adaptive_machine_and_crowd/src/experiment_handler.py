@@ -4,7 +4,7 @@ from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
 
 from adaptive_machine_and_crowd.src.utils import get_init_training_data_idx, \
-    load_data, Vectorizer, CrowdSimulator, MetricsMixin
+    load_data, Vectorizer, MetricsMixin, crowdsource_items_al
 from adaptive_machine_and_crowd.src.active_learning import Learner, ScreeningActiveLearner
 from adaptive_machine_and_crowd.src.sm_run.shortest_multi_run import ShortestMultiRun
 from adaptive_machine_and_crowd.src.policy import PointSwitchPolicy
@@ -12,7 +12,6 @@ from adaptive_machine_and_crowd.src.policy import PointSwitchPolicy
 
 def run_experiment(params):
     # parameters for crowd simulation
-    crowd_acc = params['crowd_acc']
     crowd_votes_per_item_al = params['crowd_votes_per_item_al']
     predicates = params['predicates']
     screening_out_threshold_machines = 0.9
@@ -28,7 +27,7 @@ def run_experiment(params):
             for experiment_id in range(params['experiment_nums']):
                 policy = PointSwitchPolicy(B, switch_point)
 
-                X, y_screening, y_predicate = load_data(params['dataset_file_name'], predicates)
+                X, y_screening, y_predicate, crowd_votes = load_data(params['dataset_file_name'], predicates)
                 vectorizer = Vectorizer()
                 vectorizer.fit(X)
 
@@ -52,8 +51,8 @@ def run_experiment(params):
 
                 # if Available Budget for Active Learniong is available then Do Run Active Learning Box
                 if switch_point != 0:
-                    SAL = configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels)
-                    policy.update_budget_al(params['size_init_train_data']*len(predicates)*crowd_votes_per_item_al)
+                    SAL, votes_num_init = configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels, crowd_votes)
+                    policy.update_budget_al(votes_num_init)
                     SAL.screening_out_threshold = screening_out_threshold_machines
                     i = 0
                     while policy.is_continue_al:
@@ -62,13 +61,13 @@ def run_experiment(params):
                         query_idx = SAL.query(pr)
 
                         # crowdsource sampled items
-                        gt_items_queried = SAL.learners[pr].y_pool[query_idx]
-                        y_crowdsourced = CrowdSimulator.crowdsource_items(item_ids_helper[pr][query_idx], gt_items_queried, pr,
-                                                                          crowd_acc[pr], crowd_votes_per_item_al, crowd_votes_counts)
+                        y_crowdsourced, votes_num_iter = crowdsource_items_al(crowd_votes, crowd_votes_counts,
+                                                                              item_ids_helper[pr][query_idx],
+                                                                              pr, crowd_votes_per_item_al)
                         SAL.teach(pr, query_idx, y_crowdsourced)
                         item_ids_helper[pr] = np.delete(item_ids_helper[pr], query_idx)
 
-                        policy.update_budget_al(SAL.n_instances_query*crowd_votes_per_item_al)
+                        policy.update_budget_al(votes_num_iter)
                         i += 1
 
                     unclassified_item_ids = np.arange(items_num)
@@ -85,8 +84,8 @@ def run_experiment(params):
                     policy.B_crowd = policy.B - policy.B_al_spent
                     smr_params = {
                         'estimated_predicate_accuracy': {
-                            predicates[0]: sum(crowd_acc[predicates[0]])/len(crowd_acc[predicates[0]]),
-                            predicates[1]: sum(crowd_acc[predicates[1]])/len(crowd_acc[predicates[1]])
+                            predicates[0]: 0.96,
+                            predicates[1]: 0.96
                         },
                         'estimated_predicate_selectivity': {
                             predicates[0]: sum(y_predicate[predicates[0]])/len(y_predicate[predicates[0]]),
@@ -96,7 +95,6 @@ def run_experiment(params):
                         'item_predicate_gt': item_predicate_gt,
                         'clf_threshold': params['screening_out_threshold'],
                         'stop_score': params['stop_score'],
-                        'crowd_acc': crowd_acc,
                         'prior_prob': prior_prob
                     }
                     SMR = ShortestMultiRun(smr_params)
@@ -106,17 +104,16 @@ def run_experiment(params):
                         baseround_item_num = 50  # since 50 used in WWW2018 Krivosheev et.al
                         items_baseround = unclassified_item_ids[:baseround_item_num]
                         for pr in predicates:
-                            gt_items_baseround = {item_id: item_predicate_gt[pr][item_id] for item_id in items_baseround}
-                            CrowdSimulator.crowdsource_items(items_baseround, gt_items_baseround, pr, crowd_acc[pr],
-                                                             crowd_votes_per_item_al, crowd_votes_counts)
-                            policy.update_budget_crowd(baseround_item_num * crowd_votes_per_item_al)
+                            _, votes_num_iter = crowdsource_items_al(crowd_votes, crowd_votes_counts,
+                                                                     items_baseround, pr, crowd_votes_per_item_al)
+                            policy.update_budget_crowd(votes_num_iter)
                     unclassified_item_ids = SMR.classify_items(unclassified_item_ids, crowd_votes_counts, item_labels)
 
                     while policy.is_continue_crowd and unclassified_item_ids.any():
                         # Check money
                         if (policy.B_crowd - policy.B_crowd_spent) < len(unclassified_item_ids):
                             unclassified_item_ids = unclassified_item_ids[:(policy.B_crowd - policy.B_crowd_spent)]
-                        unclassified_item_ids, budget_round = SMR.do_round(crowd_votes_counts, unclassified_item_ids, item_labels)
+                        unclassified_item_ids, budget_round = SMR.do_round(crowd_votes, crowd_votes_counts, unclassified_item_ids, item_labels)
                         policy.update_budget_crowd(budget_round)
                     print('Crowd-Box finished')
 
@@ -144,12 +141,13 @@ def run_experiment(params):
             df['active_learning_strategy'] = params['sampling_strategy'].__name__ if switch_point != 0 else ''
             df_to_print = df_to_print.append(df, ignore_index=True)
 
-    file_name = params['dataset_file_name'][:-4] + '_experiment_nums_{}_ninstq_{}'.format(params['experiment_nums'],                                                                                        params['n_instances_query'])
+    file_name = params['dataset_file_name'][:-4] + '_experiment_nums_{}_ninstq_{}_real_data'\
+        .format(params['experiment_nums'], params['n_instances_query'])
     df_to_print.to_csv('../output/adaptive_machines_and_crowd/{}.csv'.format(file_name), index=False)
 
 
 # set up active learning box
-def configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels):
+def configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels, crowd_votes):
     y_screening, y_predicate = params['y_screening'], params['y_predicate']
     size_init_train_data = params['size_init_train_data']
     predicates = params['predicates']
@@ -161,15 +159,14 @@ def configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels):
     y_predicate_train_init = {}
     X_train_init = X_pool[train_idx]
     X_pool = np.delete(X_pool, train_idx, axis=0)
+    votes_num = 0
     for pr in predicates:
-        y_predicate_train_init[pr] = y_predicate[pr][train_idx]
+        n = params['crowd_votes_per_item_al']
+        y_predicate_train_init[pr], votes_num_pr = crowdsource_items_al(crowd_votes, crowd_votes_counts, train_idx, pr, n)
+        votes_num += votes_num_pr
         y_predicate[pr] = np.delete(y_predicate[pr], train_idx)
         item_ids_helper[pr] = np.delete(item_ids_helper[pr], train_idx)
         for item_id, label in zip(train_idx, y_predicate_train_init[pr]):
-            if label == 1:
-                crowd_votes_counts[item_id][pr]['in'] = params['crowd_votes_per_item_al']
-            else:
-                crowd_votes_counts[item_id][pr]['out'] = params['crowd_votes_per_item_al']
             item_labels[item_id] = label
 
     # dict of active learners per predicate
@@ -187,7 +184,7 @@ def configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels):
     SAL = ScreeningActiveLearner(params)
     # SAL.init_stat()  # initialize statistic for predicates, uncomment if use predicate selection feature
 
-    return SAL
+    return SAL, votes_num
 
 
 def compute_mean_std(df):

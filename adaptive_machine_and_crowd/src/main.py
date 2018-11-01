@@ -26,7 +26,7 @@ import numpy as np
 
 if __name__ == '__main__':
     # Parameters for active learners
-    n_instances_query = 100
+    n_instances_query = 50
     size_init_train_data = 20
     sampling_strategy = objective_aware_sampling
 
@@ -36,33 +36,23 @@ if __name__ == '__main__':
     beta = 3
     lr = 5
 
-    # # OHUSMED DATASET
-    # dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
-    # predicates = ['C14', 'C23']
-    # dataset_size = 34387
-    # crowd_acc = {predicates[0]: [0.6, 1.],
-    #              predicates[1]: [0.6, 1.]}
+    # # AMAZON DATASET
+    predicates = ['is_negative', 'is_book']
+    dataset_file_name = '1k_amazon_reviews_crowdsourced_lemmatized.csv'
+    dataset_size = 1000
 
-    # # # AMAZON DATASET
-    # predicates = ['is_negative', 'is_book']
-    # dataset_file_name = '5000_reviews_lemmatized.csv'
-    # dataset_size = 5000
-    # crowd_acc = {predicates[0]: [0.96, 0.96],
-    #              predicates[1]: [0.96, 0.96]}
-
-    # LONELINESS SLR DATASET
-    predicates = ['oa_predicate', 'study_predicate']
-    dataset_file_name = 'loneliness-dataset-2018.csv'
-    dataset_size = 825
-    crowd_acc = {predicates[0]: [0.8, 0.8],
-                 predicates[1]: [0.6, 0.6]}
+    # # LONELINESS SLR DATASET
+    # predicates = ['oa_predicate', 'study_predicate']
+    # dataset_file_name = 'loneliness-dataset-2018.csv'
+    # dataset_size = 825
+    # crowd_acc = {predicates[0]: [0.8, 0.8],
+    #              predicates[1]: [0.6, 0.6]}
 
 
     # Experiment parameters
     experiment_nums = 10
-    policy_switch_point = np.arange(0., 0.8, 0.1)
+    policy_switch_point = np.arange(0.0, 0.8, 0.1)
     budget_per_item = np.arange(1, 9, 1)  # number of votes per item we can spend per item on average
-    dget_per_item = [3, 6]  # number of votes per item we can spend per item on average
     crowd_votes_per_item_al = 3  # for Active Learning annotation
 
     params = {
@@ -75,7 +65,6 @@ if __name__ == '__main__':
         'experiment_nums': experiment_nums,
         'predicates': predicates,
         'sampling_strategy': sampling_strategy,
-        'crowd_acc': crowd_acc,
         'crowd_votes_per_item_al': crowd_votes_per_item_al,
         'policy_switch_point': policy_switch_point,
         'budget_per_item': budget_per_item,

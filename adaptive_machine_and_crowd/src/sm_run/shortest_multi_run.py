@@ -11,16 +11,14 @@ class ShortestMultiRun:
         self.predicates = params['predicates']
         self.clf_threshold = params['clf_threshold']
         self.stop_score = params['stop_score']
-        self.crowd_acc_range = params['crowd_acc']
         self.item_predicate_gt = params['item_predicate_gt']
         self.prior_prob = params.get('prior_prob', None)
         self.max_votes_per_item = 20
 
-    def do_round(self, crowd_votes_counts, item_ids, item_labels):
-        predicate_assigned = self.assign_predicates(item_ids, crowd_votes_counts)
-        self.crowdsource_items(crowd_votes_counts, predicate_assigned)
+    def do_round(self, crowd_votes, crowd_votes_counts, item_ids, item_labels):
+        predicate_assigned = self.assign_predicates(crowd_votes, item_ids, crowd_votes_counts)
+        budget_round = self.crowdsource_items(crowd_votes, crowd_votes_counts, predicate_assigned)
         unclassified_item_ids = self.classify_items(predicate_assigned.keys(), crowd_votes_counts, item_labels)
-        budget_round = len(predicate_assigned)
 
         return unclassified_item_ids, budget_round
 
@@ -42,7 +40,7 @@ class ShortestMultiRun:
 
         return np.array(unclassified_item_ids)
 
-    def assign_predicates(self, item_ids, crowd_votes_counts):
+    def assign_predicates(self, crowd_votes, item_ids, crowd_votes_counts):
         predicate_assigned = {}
         for item_id in item_ids:
             crowdsourced_votes_num = 0
@@ -82,22 +80,26 @@ class ShortestMultiRun:
                         classify_score[predicate] = n / joint_prob_votes_out[predicate]
 
             predicate_best_score = min(classify_score, key=classify_score.get)
-            if classify_score[predicate_best_score] < self.stop_score and crowdsourced_votes_num < self.max_votes_per_item:
+            if classify_score[predicate_best_score] < self.stop_score \
+                    and crowdsourced_votes_num < self.max_votes_per_item\
+                    and crowd_votes[item_id][predicate_best_score]:
                 predicate_assigned[item_id] = predicate_best_score
 
         return predicate_assigned
 
-    def crowdsource_items(self, crowd_votes_counts, predicate_assigned):
+    def crowdsource_items(self, crowd_votes, crowd_votes_counts, predicate_assigned):
+        votes_num = 0
         for item_id in predicate_assigned.keys():
             predicate = predicate_assigned[item_id]
-            crowd_acc_range = self.crowd_acc_range[predicate]
-            worker_acc = random.uniform(crowd_acc_range[0], crowd_acc_range[1])
-            gt = self.item_predicate_gt[predicate][item_id]
-            worker_vote = np.random.binomial(1, worker_acc if gt == 1 else 1 - worker_acc)
-            if worker_vote == 1:
-                crowd_votes_counts[item_id][predicate]['in'] += 1
-            else:
-                crowd_votes_counts[item_id][predicate]['out'] += 1
+            vote_list = crowd_votes[item_id][predicate]
+            if vote_list:
+                worker_vote = vote_list.pop()
+                votes_num += 1
+                if worker_vote == 1:
+                    crowd_votes_counts[item_id][predicate]['in'] += 1
+                else:
+                    crowd_votes_counts[item_id][predicate]['out'] += 1
+        return votes_num
 
     def _prob_predicate_in(self, predicate, item_id, crowd_votes_counts):
         preducate_acc = self.estimated_predicate_accuracy[predicate]
