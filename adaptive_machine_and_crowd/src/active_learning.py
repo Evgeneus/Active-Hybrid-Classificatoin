@@ -124,8 +124,12 @@ class ScreeningActiveLearner(ChoosePredicateMixin):
         l = self.learners[predicate]
         # all learners except the current one
         learners_ = {l_: self.learners[l_] for l_ in self.learners if l_ not in [predicate]}
+        if self.n_instances_query > len(l.y_pool):
+            n_instances = len(l.y_pool)
+        else:
+            n_instances = self.n_instances_query
         query_idx, _ = l.learner.query(l.X_pool,
-                                       n_instances=self.n_instances_query,
+                                       n_instances=n_instances,
                                        learners_=learners_)
         return query_idx
 
