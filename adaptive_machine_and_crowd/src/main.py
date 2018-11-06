@@ -47,8 +47,8 @@ if __name__ == '__main__':
     # predicates = ['is_negative', 'is_book']
     # dataset_file_name = '5000_reviews_lemmatized.csv'
     # dataset_size = 5000
-    # crowd_acc = {predicates[0]: [0.96, 0.96],
-    #              predicates[1]: [0.96, 0.96]}
+    # crowd_acc = {predicates[0]: [0.94, 0.94],
+    #              predicates[1]: [0.94, 0.94]}
 
     # LONELINESS SLR DATASET
     predicates = ['oa_predicate', 'study_predicate']
@@ -62,7 +62,6 @@ if __name__ == '__main__':
     experiment_nums = 10
     policy_switch_point = np.arange(0., 0.8, 0.1)
     budget_per_item = np.arange(1, 9, 1)  # number of votes per item we can spend per item on average
-    dget_per_item = [3, 6]  # number of votes per item we can spend per item on average
     crowd_votes_per_item_al = 3  # for Active Learning annotation
 
     params = {

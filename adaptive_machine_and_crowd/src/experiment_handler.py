@@ -82,6 +82,7 @@ def run_experiment(params):
 
                 # if Available Budget for Crowd-Box DO SM-RUN
                 if policy.B_crowd:
+                    print('crowd')
                     policy.B_crowd = policy.B - policy.B_al_spent
                     smr_params = {
                         'estimated_predicate_accuracy': {
