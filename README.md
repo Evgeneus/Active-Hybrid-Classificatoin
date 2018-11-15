@@ -7,6 +7,5 @@ To run experiments install:
 - conda 4.3.30
 - [modAL](https://modal-python.readthedocs.io/en/latest/)
 
-<b>machine_and_experts_annotate</b> - active learning ML where experts annotate training data  <br/>
-To start experiments, need to run machine_and_experts_annotate/src/main.py <br/>
-To plot chaerts of results, use notebook machine_and_experts_annotate/notebooks/machines_and_experts.ipynb
+To start experiments, one needs to run adaptive_machine_and_crowd/src/main.py <br/>
+To plot chaerts of results, use notebook adaptive_machine_and_crowd/notebooks/results.ipynb
