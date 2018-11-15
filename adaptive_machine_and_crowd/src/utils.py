@@ -3,7 +3,8 @@ import pandas as pd
 import warnings, random
 
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import fbeta_score
 
 
 class Vectorizer():
@@ -84,14 +85,6 @@ class MetricsMixin:
 
         return precision, recall, fbeta, loss, fn, fp
 
-    # @staticmethod
-    # def compute_tpr_tnr(gt, predicted):
-    #     tn, fp, fn, tp = confusion_matrix(gt, predicted).ravel()
-    #     TPR = tp / (tp + fn)  # sensitivity, recall, or true positive rate
-    #     TNR = tn / (tn + fp)  # specificity or true negative rate
-    #
-    #     return TPR, TNR
-
 
 def load_data(file_name, predicates):
     path_dict = {
@@ -169,3 +162,66 @@ def mix_sampling(classifier, X, learners_, n_instances=1, **uncertainty_measure_
         query_idx = multi_argmax(uncertainty_weighted, n_instances=n_instances)
 
     return query_idx, X[query_idx]
+
+
+# Mixin for ScreeningActiveLearner if to use adaptive_policy for learning-exploitation
+class ChoosePredicateMixin:
+
+    def init_stat(self):
+        # initialize statistic for predicates
+        self.stat = {}
+        for predicate in self.predicates:
+            self.stat[predicate] = {
+                'num_items_queried': [],
+                'f_beta': [],
+            }
+
+    # compute and update performance statistic for predicate-based classifiers
+    def update_stat(self):
+        # do cross validation
+        # estimate and save statistics for extrapolation
+        window = 5
+        for predicate in self.predicates:
+            s = self.stat[predicate]
+            assert (len(s['num_items_queried']) == len(s['f_beta'])), 'Stat attribute error'
+
+            l = self.learners[predicate]
+            X, y = l.learner.X_training, l.learner.y_training
+            tpr_list, tnr_list, f_beta_list = [], [], []
+            k = 5
+            skf = StratifiedKFold(n_splits=k)
+            for train_idx, val_idx in skf.split(np.empty(y.shape[0]), y):
+                X_train, X_val = X[train_idx], X[val_idx]
+                y_train, y_val = y[train_idx], y[val_idx]
+                clf = l.learner
+                clf.fit(X_train, y_train)
+                f_beta_list.append(fbeta_score(y_val, clf.predict(X_val), beta=self.beta, average='binary'))
+            l.learner.fit(X, y)
+
+            f_beta_mean = np.mean(f_beta_list)
+            try:
+                num_items_queried_prev = self.stat[predicate]['num_items_queried'][-1]
+            except IndexError:
+                num_items_queried_prev = 0
+
+            if len(self.stat[predicate]['num_items_queried']) >= window - 1:
+                f_beta_avg = (sum(self.stat[predicate]['f_beta'][-(window-1):]) + f_beta_mean) / window
+                self.stat[predicate]['f_beta'].append(f_beta_avg)
+            else:
+                self.stat[predicate]['f_beta'].append(f_beta_mean)
+            self.stat[predicate]['num_items_queried'].append((num_items_queried_prev + self.n_instances_query))
+
+    def select_predicate_stop(self, param):
+        predicates_to_train = []
+        for predicate in self.predicates:
+            if (self.stat[predicate]['f_beta'][-1] - self.stat[predicate]['f_beta'][-10]) >= 0.02:
+                predicates_to_train.append(predicate)
+        if not predicates_to_train:
+            return None
+        elif len(predicates_to_train) == 1:
+            return predicates_to_train[0]
+        else:
+            if len(self.predicates) == 1:
+                return self.predicates[0]
+            elif len(self.predicates) == 2:
+                return self.predicates[param % 2]
