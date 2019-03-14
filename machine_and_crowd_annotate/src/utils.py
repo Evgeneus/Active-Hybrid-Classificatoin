@@ -116,9 +116,8 @@ def get_init_training_data_idx(y_screening, y_predicate_train, init_train_size, 
 
 
 # random sampling strategy for modAL
-def random_sampling(_, X, n_instances=1, seed=123):
-    random.seed(seed)
-    query_idx = np.array(random.sample(range(X.shape[0]), n_instances))
+def random_sampling(_, X, n_instances=1):
+    query_idx = random.sample(range(X.shape[0]), n_instances)
 
     return query_idx, X[query_idx]
 
