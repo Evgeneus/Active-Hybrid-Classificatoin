@@ -1,5 +1,5 @@
 import numpy as np
-import warnings
+import warnings, random
 
 
 # load data from csv
@@ -15,9 +15,8 @@ def load_data(predicate, df):
 
 
 # random sampling strategy for modAL
-def random_sampling(_, X, n_instances=1, seed=123):
-    np.random.seed(seed)
-    query_idx = np.random.randint(X.shape[0], size=n_instances)
+def random_sampling(_, X, n_instances=1):
+    query_idx = random.sample(range(X.shape[0]), n_instances)
 
     return query_idx, X[query_idx]
 
