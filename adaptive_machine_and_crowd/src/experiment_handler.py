@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 from sklearn.svm import LinearSVC
@@ -15,7 +16,7 @@ def run_experiment(params):
     crowd_acc = params['crowd_acc']
     crowd_votes_per_item_al = params['crowd_votes_per_item_al']
     predicates = params['predicates']
-    screening_out_threshold_machines = 0.9
+    screening_out_threshold_machines = 0.5
 
     df_to_print = pd.DataFrame()
     for budget_per_item in params['budget_per_item']:
@@ -145,8 +146,13 @@ def run_experiment(params):
             df['active_learning_strategy'] = params['sampling_strategy'].__name__ if switch_point != 0 else ''
             df_to_print = df_to_print.append(df, ignore_index=True)
 
-    file_name = params['dataset_file_name'][:-4] + '_experiment_nums_{}_ninstq_{}'.format(params['experiment_nums'],                                                                                        params['n_instances_query'])
-    df_to_print.to_csv('../output/adaptive_machines_and_crowd/{}.csv'.format(file_name), index=False)
+    file_name = params['dataset_file_name'][:-4] + '_experiment_nums_{}_ninstq_{}'.format(params['experiment_nums'], params['n_instances_query'])
+    if os.path.isfile('../output/adaptive_machines_and_crowd/{}.csv'.format(file_name)):
+        df_prev = pd.read_csv('../output/adaptive_machines_and_crowd/{}.csv'.format(file_name))
+        df_new = df_prev.append(df_to_print, ignore_index=True)
+        df_new.to_csv('../output/adaptive_machines_and_crowd/{}.csv'.format(file_name), index=False)
+    else:
+        df_to_print.to_csv('../output/adaptive_machines_and_crowd/{}.csv'.format(file_name), index=False)
 
 
 # set up active learning box
