@@ -25,6 +25,30 @@ import numpy as np
 
 
 if __name__ == '__main__':
+    datasets = ['amazon', 'ohusmed', 'slr']
+    dataset = datasets[0]
+    if dataset == 'amazon':
+        # AMAZON DATASET
+        predicates = ['is_negative', 'is_book']
+        dataset_file_name = '5000_reviews_lemmatized.csv'
+        dataset_size = 5000
+        crowd_acc = {predicates[0]: [0.94, 0.94],
+                     predicates[1]: [0.94, 0.94]}
+    elif dataset == 'ohusmed':
+        # OHUSMED DATASET
+        dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
+        predicates = ['C14', 'C23']
+        dataset_size = 34387
+        crowd_acc = {predicates[0]: [0.6, 1.],
+                     predicates[1]: [0.6, 1.]}
+    elif dataset == 'slr':
+        # LONELINESS SLR DATASET
+        predicates = ['oa_predicate', 'study_predicate']
+        dataset_file_name = 'loneliness-dataset-2018.csv'
+        dataset_size = 825
+        crowd_acc = {predicates[0]: [0.8, 0.8],
+                     predicates[1]: [0.6, 0.6]}
+
     # Parameters for active learners
     n_instances_query = 100
     size_init_train_data = 20
@@ -33,30 +57,8 @@ if __name__ == '__main__':
     # Classification parameters
     screening_out_threshold = 0.99  # for SM-Run
     stop_score = 50  # for SM-Run Algorithm
-    beta = 3
-    lr = 5
-
-    # OHUSMED DATASET
-    # dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
-    # predicates = ['C14', 'C23']
-    # dataset_size = 34387
-    # crowd_acc = {predicates[0]: [0.6, 1.],
-    #              predicates[1]: [0.6, 1.]}
-
-    # AMAZON DATASET
-    predicates = ['is_negative', 'is_book']
-    dataset_file_name = '5000_reviews_lemmatized.csv'
-    dataset_size = 5000
-    crowd_acc = {predicates[0]: [0.94, 0.94],
-                 predicates[1]: [0.94, 0.94]}
-
-    # # LONELINESS SLR DATASET
-    # predicates = ['oa_predicate', 'study_predicate']
-    # dataset_file_name = 'loneliness-dataset-2018.csv'
-    # dataset_size = 825
-    # crowd_acc = {predicates[0]: [0.8, 0.8],
-    #              predicates[1]: [0.6, 0.6]}
-
+    beta = 1
+    lr = 1
 
     # Experiment parameters
     experiment_nums = 10
