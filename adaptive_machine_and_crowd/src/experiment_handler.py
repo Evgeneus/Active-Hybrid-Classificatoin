@@ -140,7 +140,7 @@ def run_experiment(params):
                 print('--------------------------------------------------------------')
 
             df = pd.DataFrame(results_list, columns=['budget_per_item', 'budget_spent_per_item',
-                                                     'precision', 'recall', 'f_beta', 'loss',
+                                                     'precision', 'recall', 'f{}'.format(params['beta']), 'loss',
                                                      'fn_count', 'fp_count', 'AL_switch_point'])
             df = compute_mean_std(df)
             df['active_learning_strategy'] = params['sampling_strategy'].__name__ if switch_point != 0 else ''

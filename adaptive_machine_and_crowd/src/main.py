@@ -1,5 +1,5 @@
 from modAL.uncertainty import uncertainty_sampling
-from adaptive_machine_and_crowd.src.utils import random_sampling, objective_aware_sampling, mix_sampling
+from adaptive_machine_and_crowd.src.utils import random_sampling, objective_aware_sampling
 
 from adaptive_machine_and_crowd.src.experiment_handler import run_experiment
 import numpy as np
@@ -51,7 +51,6 @@ if __name__ == '__main__':
     # Parameters for active learners
     n_instances_query = 100
     size_init_train_data = 20
-    sampling_strategy = uncertainty_sampling
 
     # Classification parameters
     screening_out_threshold = 0.5  # for SM-Run
@@ -65,23 +64,24 @@ if __name__ == '__main__':
     budget_per_item = np.arange(1, 9, 1)  # number of votes per item we can spend per item on average
     crowd_votes_per_item_al = 3  # for Active Learning annotation
 
-    params = {
-        'dataset_file_name': dataset_file_name,
-        'n_instances_query': n_instances_query,
-        'size_init_train_data': size_init_train_data,
-        'screening_out_threshold': screening_out_threshold,
-        'beta': beta,
-        'lr': lr,
-        'experiment_nums': experiment_nums,
-        'predicates': predicates,
-        'sampling_strategy': sampling_strategy,
-        'crowd_acc': crowd_acc,
-        'crowd_votes_per_item_al': crowd_votes_per_item_al,
-        'policy_switch_point': policy_switch_point,
-        'budget_per_item': budget_per_item,
-        'stop_score': stop_score,
-        'dataset_size': dataset_size
-    }
+    for sampling_strategy in [random_sampling, uncertainty_sampling]:
+        params = {
+            'dataset_file_name': dataset_file_name,
+            'n_instances_query': n_instances_query,
+            'size_init_train_data': size_init_train_data,
+            'screening_out_threshold': screening_out_threshold,
+            'beta': beta,
+            'lr': lr,
+            'experiment_nums': experiment_nums,
+            'predicates': predicates,
+            'sampling_strategy': sampling_strategy,
+            'crowd_acc': crowd_acc,
+            'crowd_votes_per_item_al': crowd_votes_per_item_al,
+            'policy_switch_point': policy_switch_point,
+            'budget_per_item': budget_per_item,
+            'stop_score': stop_score,
+            'dataset_size': dataset_size
+        }
 
-    run_experiment(params)
-    print('Done!')
+        run_experiment(params)
+        print('{} is Done!'.format(sampling_strategy.__name__))
