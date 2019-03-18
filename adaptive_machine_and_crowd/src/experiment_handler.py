@@ -55,10 +55,9 @@ def run_experiment(params):
                     SAL = configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels)
                     policy.update_budget_al(params['size_init_train_data']*len(predicates)*crowd_votes_per_item_al)
                     SAL.screening_out_threshold = screening_out_threshold_machines
-                    i = 0
                     while policy.is_continue_al:
                         # SAL.update_stat()  # uncomment if use predicate selection feature
-                        pr = SAL.select_predicate(i)
+                        pr = SAL.select_predicate()
                         query_idx = SAL.query(pr)
 
                         # crowdsource sampled items
@@ -69,7 +68,6 @@ def run_experiment(params):
                         item_ids_helper[pr] = np.delete(item_ids_helper[pr], query_idx)
 
                         policy.update_budget_al(SAL.n_instances_query*crowd_votes_per_item_al)
-                        i += 1
 
                     unclassified_item_ids = np.arange(items_num)
                     # Get prior from machines
