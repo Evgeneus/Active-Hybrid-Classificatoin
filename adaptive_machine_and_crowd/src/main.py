@@ -53,14 +53,14 @@ if __name__ == '__main__':
     size_init_train_data = 20
 
     # Classification parameters
-    screening_out_threshold = 0.5  # for SM-Run
+    screening_out_threshold = 0.5  # for SM-Run and ML
     stop_score = 50  # for SM-Run Algorithm
     beta = 1
     lr = 1
 
     # Experiment parameters
-    experiment_nums = 10
-    policy_switch_point = np.arange(0., 0.8, 0.1)
+    experiment_nums = 50
+    policy_switch_point = np.arange(0., 1.01, 0.1)
     budget_per_item = np.arange(1, 9, 1)  # number of votes per item we can spend per item on average
     crowd_votes_per_item_al = 3  # for Active Learning annotation
 

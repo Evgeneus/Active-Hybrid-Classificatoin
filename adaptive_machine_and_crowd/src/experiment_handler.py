@@ -16,7 +16,7 @@ def run_experiment(params):
     crowd_acc = params['crowd_acc']
     crowd_votes_per_item_al = params['crowd_votes_per_item_al']
     predicates = params['predicates']
-    screening_out_threshold_machines = 0.5
+    screening_out_threshold_machines = params['screening_out_threshold']
 
     df_to_print = pd.DataFrame()
     for budget_per_item in params['budget_per_item']:
@@ -144,6 +144,7 @@ def run_experiment(params):
                                                      'fn_count', 'fp_count', 'AL_switch_point'])
             df = compute_mean_std(df)
             df['active_learning_strategy'] = params['sampling_strategy'].__name__ if switch_point != 0 else ''
+            df['screening_out_threshold'] = params['screening_out_threshold']
             df_to_print = df_to_print.append(df, ignore_index=True)
 
     file_name = params['dataset_file_name'][:-4] + '_experiment_nums_{}_ninstq_{}'.format(params['experiment_nums'], params['n_instances_query'])
