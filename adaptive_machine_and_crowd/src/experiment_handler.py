@@ -82,15 +82,14 @@ def run_experiment(params):
                 if policy.B_crowd:
                     print('crowd')
                     policy.B_crowd = policy.B - policy.B_al_spent
+                    estimated_predicate_accuracy = {}
+                    estimated_predicate_selectivity = {}
+                    for pr in predicates:
+                        estimated_predicate_accuracy[pr] = sum(crowd_acc[pr]) / 2
+                        estimated_predicate_selectivity[pr] = sum(y_predicate[pr]) / len(y_predicate[pr])
                     smr_params = {
-                        'estimated_predicate_accuracy': {
-                            predicates[0]: sum(crowd_acc[predicates[0]])/len(crowd_acc[predicates[0]]),
-                            predicates[1]: sum(crowd_acc[predicates[1]])/len(crowd_acc[predicates[1]])
-                        },
-                        'estimated_predicate_selectivity': {
-                            predicates[0]: sum(y_predicate[predicates[0]])/len(y_predicate[predicates[0]]),
-                            predicates[1]: sum(y_predicate[predicates[1]])/len(y_predicate[predicates[1]])
-                        },
+                        'estimated_predicate_accuracy': estimated_predicate_accuracy,
+                        'estimated_predicate_selectivity': estimated_predicate_selectivity,
                         'predicates': predicates,
                         'item_predicate_gt': item_predicate_gt,
                         'clf_threshold': params['screening_out_threshold'],
