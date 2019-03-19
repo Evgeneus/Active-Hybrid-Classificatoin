@@ -25,8 +25,9 @@ import numpy as np
 
 
 if __name__ == '__main__':
-    datasets = ['amazon', 'ohusmed', 'slr']
-    dataset = 'slr'
+    datasets = ['amazon', 'ohusmed', 'slr',
+                'amazon_binary']
+    dataset = 'amazon_binary'
     if dataset == 'amazon':
         # AMAZON DATASET
         predicates = ['is_negative', 'is_book']
@@ -45,6 +46,13 @@ if __name__ == '__main__':
         dataset_file_name = 'loneliness-dataset-2018.csv'
         dataset_size = 825
         crowd_acc = {predicates[0]: [0.8, 0.8], predicates[1]: [0.6, 0.6]}
+    elif dataset == 'amazon_binary':
+        # AMAZON BINARY DATASET
+        predicates = ['Y']
+        dataset_file_name = '5000_reviews_lemmatized.csv'
+        dataset_size = 5000
+        crowd_acc = {predicates[0]: [0.94, 0.94]}
+
     else:
         exit(1)
 
@@ -53,18 +61,19 @@ if __name__ == '__main__':
     size_init_train_data = 20
 
     # Classification parameters
-    screening_out_threshold = 0.5  # for SM-Run and ML
+    screening_out_threshold = 0.99  # for SM-Run and ML
     stop_score = 50  # for SM-Run Algorithm
     beta = 1
-    lr = 1
+    lr = 5
 
     # Experiment parameters
-    experiment_nums = 50
+    experiment_nums = 10
     policy_switch_point = np.arange(0., 1.01, 0.1)
     budget_per_item = np.arange(1, 9, 1)  # number of votes per item we can spend per item on average
     crowd_votes_per_item_al = 3  # for Active Learning annotation
 
     for sampling_strategy in [random_sampling, uncertainty_sampling]:
+        print('{} is Running!'.format(sampling_strategy.__name__))
         params = {
             'dataset_file_name': dataset_file_name,
             'n_instances_query': n_instances_query,

@@ -16,7 +16,7 @@ def run_experiment(params):
     crowd_acc = params['crowd_acc']
     crowd_votes_per_item_al = params['crowd_votes_per_item_al']
     predicates = params['predicates']
-    screening_out_threshold_machines = params['screening_out_threshold']
+    screening_out_threshold_machines = 0.7
 
     df_to_print = pd.DataFrame()
     for budget_per_item in params['budget_per_item']:
@@ -80,11 +80,10 @@ def run_experiment(params):
                         for pr in predicates:
                             prediction = SAL.learners[pr].learner.predict_proba(vectorizer.transform([X[item_id]]))[0]
                             prior_prob[item_id][pr] = {'in': prediction[1], 'out': prediction[0]}
-                    print('experiment_id {}, AL-Box finished'.format(experiment_id), end=', ')
+                    print('experiment_id {}'.format(experiment_id), end=', ')
 
                 # if Available Budget for Crowd-Box DO SM-RUN
                 if policy.B_crowd:
-                    print('crowd')
                     policy.B_crowd = policy.B - policy.B_al_spent
                     estimated_predicate_accuracy = {}
                     estimated_predicate_selectivity = {}
@@ -120,7 +119,7 @@ def run_experiment(params):
                             unclassified_item_ids = unclassified_item_ids[:(policy.B_crowd - policy.B_crowd_spent)]
                         unclassified_item_ids, budget_round = SMR.do_round(crowd_votes_counts, unclassified_item_ids, item_labels)
                         policy.update_budget_crowd(budget_round)
-                    print('Crowd-Box finished')
+                    # print('Crowd-Box finished')
 
                 # if budget is over and we did the AL part then classify the rest of the items via machines
                 if unclassified_item_ids.any() and switch_point != 0:
