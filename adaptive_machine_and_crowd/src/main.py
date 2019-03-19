@@ -25,9 +25,8 @@ import numpy as np
 
 
 if __name__ == '__main__':
-    datasets = ['amazon', 'ohusmed', 'slr',
-                'amazon_binary']
-    dataset = 'amazon_binary'
+    # datasets = 'amazon', 'ohusmed', 'slr', 'amazon_binary', 'ohusmed_binary', 'slr_binary'
+    dataset = 'amazon'
     if dataset == 'amazon':
         # AMAZON DATASET
         predicates = ['is_negative', 'is_book']
@@ -52,7 +51,18 @@ if __name__ == '__main__':
         dataset_file_name = '5000_reviews_lemmatized.csv'
         dataset_size = 5000
         crowd_acc = {predicates[0]: [0.94, 0.94]}
-
+    elif dataset == 'slr_binary':
+        # LONELINESS BINARY SLR DATASET
+        predicates = ['Y']
+        dataset_file_name = 'loneliness-dataset-2018.csv'
+        dataset_size = 825
+        crowd_acc = {predicates[0]: [0.75, 0.75]}
+    elif dataset == 'ohusmed_binary':
+        # OHUSMED BINARY DATASET
+        dataset_file_name = 'ohsumed_C14_C23_1grams.csv'
+        predicates = ['Y']
+        dataset_size = 34387
+        crowd_acc = {predicates[0]: [0.6, 1.]}
     else:
         exit(1)
 

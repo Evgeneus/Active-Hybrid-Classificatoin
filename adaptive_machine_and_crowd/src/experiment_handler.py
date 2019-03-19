@@ -147,6 +147,8 @@ def run_experiment(params):
             df_to_print = df_to_print.append(df, ignore_index=True)
 
     file_name = params['dataset_file_name'][:-4] + '_experiment_nums_{}_ninstq_{}'.format(params['experiment_nums'], params['n_instances_query'])
+    if 'binary' in file_name:
+        file_name = 'binary_' + file_name
     if os.path.isfile('../output/{}.csv'.format(file_name)):
         df_prev = pd.read_csv('../output/{}.csv'.format(file_name))
         df_new = df_prev.append(df_to_print, ignore_index=True)
