@@ -111,14 +111,13 @@ class ScreeningActiveLearner(ChoosePredicateMixin):
         self.beta = params['beta']
         self.learners = params['learners']
         self.predicates = list(self.learners.keys())
+        self.predicate_queue = list(range(len(self.predicates)))
 
-    def select_predicate(self, param):
-        if len(self.predicates) == 1:
-            return self.predicates[0]
-        elif len(self.predicates) == 2:
-            return self.predicates[param % 2]
-        else:
-            raise ValueError('More than 2 predicates not supported yet. Change select_predicate method.')
+    def select_predicate(self):
+        pred_id = self.predicate_queue.pop(0)
+        self.predicate_queue.append(pred_id)
+
+        return self.predicates[pred_id]
 
     def query(self, predicate):
         l = self.learners[predicate]

@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 from sklearn.svm import LinearSVC
@@ -14,7 +15,8 @@ def run_experiment(params):
     # parameters for crowd simulation
     crowd_votes_per_item_al = params['crowd_votes_per_item_al']
     predicates = params['predicates']
-    screening_out_threshold_machines = 0.9
+    crowd_acc = params['crowd_acc']
+    screening_out_threshold_machines = 0.7
 
     df_to_print = pd.DataFrame()
     for budget_per_item in params['budget_per_item']:
@@ -54,7 +56,6 @@ def run_experiment(params):
                     SAL, votes_num_init = configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels, crowd_votes)
                     policy.update_budget_al(votes_num_init)
                     SAL.screening_out_threshold = screening_out_threshold_machines
-                    i = 0
                     while policy.is_continue_al:
                         # SAL.update_stat()  # uncomment if use adaptive policy
                         # if (policy.B - policy.B_al_spent) <= items_num:
@@ -66,9 +67,12 @@ def run_experiment(params):
                         #     print(pr)
                         # if pr == None:
                         #     break
-                        pr = SAL.select_predicate(i)
-                        query_idx = SAL.query(pr)
-
+                        pr = SAL.select_predicate()
+                        try:
+                            query_idx = SAL.query(pr)
+                        except:
+                            # exit the loop if we crowdsourced all the items
+                            break
                         # crowdsource sampled items
                         y_crowdsourced, votes_num_iter = crowdsource_items_al(crowd_votes, crowd_votes_counts,
                                                                               item_ids_helper[pr][query_idx],
@@ -77,7 +81,6 @@ def run_experiment(params):
                         item_ids_helper[pr] = np.delete(item_ids_helper[pr], query_idx)
 
                         policy.update_budget_al(votes_num_iter)
-                        i += 1
 
                     unclassified_item_ids = np.arange(items_num)
                     # Get prior from machines
@@ -91,15 +94,15 @@ def run_experiment(params):
                 # if Available Budget for Crowd-Box DO SM-RUN
                 if policy.B_crowd:
                     policy.B_crowd = policy.B - policy.B_al_spent
+                    estimated_predicate_accuracy = {}
+                    estimated_predicate_selectivity = {}
+                    for pr in predicates:
+                        estimated_predicate_accuracy[pr] = sum(crowd_acc[pr]) / 2
+                        estimated_predicate_selectivity[pr] = sum(y_predicate[pr]) / len(y_predicate[pr])
+
                     smr_params = {
-                        'estimated_predicate_accuracy': {
-                            predicates[0]: 0.94,
-                            predicates[1]: 0.94
-                        },
-                        'estimated_predicate_selectivity': {
-                            predicates[0]: sum(y_predicate[predicates[0]])/len(y_predicate[predicates[0]]),
-                            predicates[1]: sum(y_predicate[predicates[1]])/len(y_predicate[predicates[1]])
-                        },
+                        'estimated_predicate_accuracy': estimated_predicate_accuracy,
+                        'estimated_predicate_selectivity': estimated_predicate_selectivity,
                         'predicates': predicates,
                         'item_predicate_gt': item_predicate_gt,
                         'clf_threshold': params['screening_out_threshold'],
@@ -144,15 +147,23 @@ def run_experiment(params):
                 print('--------------------------------------------------------------')
 
             df = pd.DataFrame(results_list, columns=['budget_per_item', 'budget_spent_per_item',
-                                                     'precision', 'recall', 'f_beta', 'loss',
+                                                     'precision', 'recall', 'f{}'.format(params['beta']), 'loss',
                                                      'fn_count', 'fp_count', 'AL_switch_point'])
             df = compute_mean_std(df)
             df['active_learning_strategy'] = params['sampling_strategy'].__name__ if switch_point != 0 else ''
+            df['screening_out_threshold'] = params['screening_out_threshold']
             df_to_print = df_to_print.append(df, ignore_index=True)
 
-    file_name = params['dataset_file_name'][:-4] + '_experiment_nums_{}_ninstq_{}_real_data'\
-        .format(params['experiment_nums'], params['n_instances_query'])
-    df_to_print.to_csv('../output/adaptive_machines_and_crowd/{}.csv'.format(file_name), index=False)
+    file_name = params['dataset_file_name'][:-4] + '_experiment_nums_{}_ninstq_{}'.format(params['experiment_nums'],
+                                                                                          params['n_instances_query'])
+    if len(predicates) == 1:
+        file_name = 'binary_' + file_name
+    if os.path.isfile('../output/{}.csv'.format(file_name)):
+        df_prev = pd.read_csv('../output/{}.csv'.format(file_name))
+        df_new = df_prev.append(df_to_print, ignore_index=True)
+        df_new.to_csv('../output/adaptive_machines_and_crowd/{}.csv'.format(file_name), index=False)
+    else:
+        df_to_print.to_csv('../output/{}.csv'.format(file_name), index=False)
 
 
 # set up active learning box
