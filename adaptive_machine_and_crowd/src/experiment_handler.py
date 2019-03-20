@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
-from sklearn.svm import LinearSVC
+from sklearn.linear_model import SGDClassifier  # linear svm by default
 from sklearn.calibration import CalibratedClassifierCV
 
 from adaptive_machine_and_crowd.src.utils import get_init_training_data_idx, \
@@ -186,7 +186,7 @@ def configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels):
     learners = {}
     for pr in predicates:  # setup predicate-based learners
         learner_params = {
-            'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced', C=0.1)),
+            'clf': CalibratedClassifierCV(SGDClassifier(class_weight='balanced', max_iter=1000, tol=1e-3, n_jobs=-1)),
             'sampling_strategy': params['sampling_strategy'],
         }
         learner = Learner(learner_params)
