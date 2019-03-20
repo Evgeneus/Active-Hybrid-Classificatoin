@@ -56,7 +56,7 @@ class ScreeningActiveLearner:
         learners_ = {l_: self.learners[l_] for l_ in self.learners if l_ not in [predicate]}
         if self.n_instances_query > len(l.y_pool):
             if len(l.y_pool) == 0:
-                return 0
+                return []
             n_instances = len(l.y_pool)
         else:
             n_instances = self.n_instances_query
