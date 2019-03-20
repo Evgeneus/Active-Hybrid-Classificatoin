@@ -152,7 +152,7 @@ def run_experiment(params):
     if os.path.isfile('../output/{}.csv'.format(file_name)):
         df_prev = pd.read_csv('../output/{}.csv'.format(file_name))
         df_new = df_prev.append(df_to_print, ignore_index=True)
-        df_new.to_csv('../output/adaptive_machines_and_crowd/{}.csv'.format(file_name), index=False)
+        df_new.to_csv('../output/{}.csv'.format(file_name), index=False)
     else:
         df_to_print.to_csv('../output/{}.csv'.format(file_name), index=False)
 
