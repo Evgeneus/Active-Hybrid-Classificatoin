@@ -86,14 +86,14 @@ class MetricsMixin:
         return precision, recall, fbeta, loss, fn, fp
 
 
-def load_data(file_name, predicates):
+def load_data(file_name, predicates, path_to_project):
     path_dict = {
-        '100000_reviews_lemmatized_old.csv': '../../data/amazon-sentiment-dataset/',
-        '5000_reviews_lemmatized.csv': '../../data/amazon-sentiment-dataset/',
-        'ohsumed_C04_C12_1grams.csv': '../../data/ohsumed_data/',
-        'ohsumed_C10_C23_1grams.csv': '../../data/ohsumed_data/',
-        'ohsumed_C14_C23_1grams.csv': '../../data/ohsumed_data/',
-        'loneliness-dataset-2018.csv': '../../data/loneliness-dataset-2018/'
+        '100000_reviews_lemmatized_old.csv': path_to_project + 'data/amazon-sentiment-dataset/',
+        '5000_reviews_lemmatized.csv': path_to_project + 'data/amazon-sentiment-dataset/',
+        'ohsumed_C04_C12_1grams.csv': path_to_project + 'data/ohsumed_data/',
+        'ohsumed_C10_C23_1grams.csv': path_to_project + '/data/ohsumed_data/',
+        'ohsumed_C14_C23_1grams.csv': path_to_project + 'data/ohsumed_data/',
+        'loneliness-dataset-2018.csv': path_to_project + 'data/loneliness-dataset-2018/'
     }
     path = path_dict[file_name]
     data = pd.read_csv(path + file_name)

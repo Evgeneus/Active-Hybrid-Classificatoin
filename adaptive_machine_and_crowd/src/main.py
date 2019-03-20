@@ -1,5 +1,8 @@
 import sys, os
-sys.path.append(os.path.realpath('main.py')[:-39])
+# path_to_project = os.path.realpath('main.py')[:-38]
+path_to_project = os.path.realpath('main.py')[:-38]
+# path_to_project = '/home/evgeny.krivosheev/Active-Hybrid-Classificatoin_MultiPredicate/'
+sys.path.append(path_to_project)
 
 from modAL.uncertainty import uncertainty_sampling
 from adaptive_machine_and_crowd.src.utils import random_sampling, objective_aware_sampling
@@ -102,7 +105,8 @@ if __name__ == '__main__':
             'policy_switch_point': policy_switch_point,
             'budget_per_item': budget_per_item,
             'stop_score': stop_score,
-            'dataset_size': dataset_size
+            'dataset_size': dataset_size,
+            'path_to_project' : path_to_project
         }
 
         run_experiment(params)

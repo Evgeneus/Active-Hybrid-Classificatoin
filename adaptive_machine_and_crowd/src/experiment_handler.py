@@ -29,7 +29,7 @@ def run_experiment(params):
             for experiment_id in range(params['experiment_nums']):
                 policy = PointSwitchPolicy(B, switch_point)
 
-                X, y_screening, y_predicate = load_data(params['dataset_file_name'], predicates)
+                X, y_screening, y_predicate = load_data(params['dataset_file_name'], predicates, params['path_to_project'])
                 vectorizer = Vectorizer()
                 vectorizer.fit(X)
 
@@ -149,12 +149,13 @@ def run_experiment(params):
     file_name = params['dataset_file_name'][:-4] + '_experiment_nums_{}_ninstq_{}'.format(params['experiment_nums'], params['n_instances_query'])
     if len(predicates) == 1:
         file_name = 'binary_' + file_name
-    if os.path.isfile('../output/{}.csv'.format(file_name)):
-        df_prev = pd.read_csv('../output/{}.csv'.format(file_name))
+    path = params['path_to_project'] + 'adaptive_machine_and_crowd/output/'
+    if os.path.isfile(path + '{}.csv'.format(file_name)):
+        df_prev = pd.read_csv(path + '{}.csv'.format(file_name))
         df_new = df_prev.append(df_to_print, ignore_index=True)
-        df_new.to_csv('../output/{}.csv'.format(file_name), index=False)
+        df_new.to_csv(path + '{}.csv'.format(file_name), index=False)
     else:
-        df_to_print.to_csv('../output/{}.csv'.format(file_name), index=False)
+        df_to_print.to_csv(path + '{}.csv'.format(file_name), index=False)
 
 
 # set up active learning box
