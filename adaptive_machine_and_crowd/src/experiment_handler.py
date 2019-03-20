@@ -59,9 +59,8 @@ def run_experiment(params):
                     while policy.is_continue_al:
                         # SAL.update_stat()  # uncomment if use predicate selection feature
                         pr = SAL.select_predicate()
-                        try:
-                            query_idx = SAL.query(pr)
-                        except:
+                        query_idx = SAL.query(pr)
+                        if len(query_idx) == 0:
                             # exit the loop if we crowdsourced all the items
                             break
                         # crowdsource sampled items
