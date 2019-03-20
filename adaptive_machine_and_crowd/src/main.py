@@ -1,3 +1,6 @@
+import sys, os
+sys.path.append(os.path.realpath('main.py')[:-39])
+
 from modAL.uncertainty import uncertainty_sampling
 from adaptive_machine_and_crowd.src.utils import random_sampling, objective_aware_sampling
 
