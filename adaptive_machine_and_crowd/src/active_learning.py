@@ -68,18 +68,13 @@ class ChoosePredicateMixin:
     def select_predicate_stop(self, param):
         predicates_to_train = []
         for predicate in self.predicates:
-            if (self.stat[predicate]['f_beta'][-1] - self.stat[predicate]['f_beta'][-10]) >= 0.02\
-                    and len(self.learners[predicate].y_pool) >= self.n_instances_query:
+            if (self.stat[predicate]['f_beta'][-1] - self.stat[predicate]['f_beta'][-10]) >= 0.02:
                 predicates_to_train.append(predicate)
         if not predicates_to_train:
             return None
-        elif len(predicates_to_train) == 1:
-            return predicates_to_train[0]
         else:
-            if len(self.predicates) == 1:
-                return self.predicates[0]
-            elif len(self.predicates) == 2:
-                return self.predicates[param % 2]
+            n = len(predicates_to_train)
+            return predicates_to_train[param % n]
 
 
 class Learner:
@@ -124,9 +119,12 @@ class ScreeningActiveLearner(ChoosePredicateMixin):
         # all learners except the current one
         learners_ = {l_: self.learners[l_] for l_ in self.learners if l_ not in [predicate]}
         if self.n_instances_query > len(l.y_pool):
+            if len(l.y_pool) == 0:
+                return []
             n_instances = len(l.y_pool)
         else:
             n_instances = self.n_instances_query
+
         query_idx, _ = l.learner.query(l.X_pool,
                                        n_instances=n_instances,
                                        learners_=learners_)

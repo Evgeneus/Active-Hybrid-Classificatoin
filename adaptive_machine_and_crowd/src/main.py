@@ -42,7 +42,7 @@ if __name__ == '__main__':
         predicates = ['Y']
         dataset_file_name = '1k_amazon_reviews_crowdsourced_lemmatized.csv'
         dataset_size = 1000
-        crowd_acc = {predicates[0]: [0.94, 0.94]}
+        crowd_acc = {predicates[0]: [0.93, 0.93]}
     else:
         exit(1)
 
@@ -59,9 +59,7 @@ if __name__ == '__main__':
     # Experiment parameters
     experiment_nums = 10
     policy_switch_point = np.arange(0., 1.01, 0.1)
-    # policy_switch_point = [0., 0.3, 1.]
     budget_per_item = np.arange(1, 9, 1)  # number of votes per item we can spend per item on average
-    # budget_per_item = [3]  # number of votes per item we can spend per item on average
     crowd_votes_per_item_al = 3  # for Active Learning annotation
 
     for sampling_strategy in [random_sampling, uncertainty_sampling]:
@@ -81,7 +79,8 @@ if __name__ == '__main__':
             'policy_switch_point': policy_switch_point,
             'budget_per_item': budget_per_item,
             'stop_score': stop_score,
-            'dataset_size': dataset_size
+            'dataset_size': dataset_size,
+            'path_to_project': path_to_project
         }
 
         run_experiment(params)
