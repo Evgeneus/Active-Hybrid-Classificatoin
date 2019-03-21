@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
-from sklearn.svm import LinearSVC
+from sklearn.linear_model import SGDClassifier  # linear svm by default
 from sklearn.calibration import CalibratedClassifierCV
 
 from adaptive_machine_and_crowd.src.utils import get_init_training_data_idx, \
@@ -154,16 +154,17 @@ def run_experiment(params):
             df['screening_out_threshold'] = params['screening_out_threshold']
             df_to_print = df_to_print.append(df, ignore_index=True)
 
-    file_name = params['dataset_file_name'][:-4] + '_experiment_nums_{}_ninstq_{}'.format(params['experiment_nums'],
+    file_name = 'real_data_' + params['dataset_file_name'][:-4] + '_experiment_nums_{}_ninstq_{}'.format(params['experiment_nums'],
                                                                                           params['n_instances_query'])
     if len(predicates) == 1:
         file_name = 'binary_' + file_name
-    if os.path.isfile('../output/{}.csv'.format(file_name)):
-        df_prev = pd.read_csv('../output/{}.csv'.format(file_name))
+    path = params['path_to_project'] + 'adaptive_machine_and_crowd/output/'
+    if os.path.isfile(path + '{}.csv'.format(file_name)):
+        df_prev = pd.read_csv(path + '{}.csv'.format(file_name))
         df_new = df_prev.append(df_to_print, ignore_index=True)
-        df_new.to_csv('../output/adaptive_machines_and_crowd/{}.csv'.format(file_name), index=False)
+        df_new.to_csv(path + '{}.csv'.format(file_name), index=False)
     else:
-        df_to_print.to_csv('../output/{}.csv'.format(file_name), index=False)
+        df_to_print.to_csv(path + '{}.csv'.format(file_name), index=False)
 
 
 # set up active learning box
@@ -193,7 +194,7 @@ def configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels, c
     learners = {}
     for pr in predicates:  # setup predicate-based learners
         learner_params = {
-            'clf': CalibratedClassifierCV(LinearSVC(class_weight='balanced', C=0.1)),
+            'clf': CalibratedClassifierCV(SGDClassifier(class_weight='balanced', max_iter=1000, tol=1e-3, n_jobs=-1)),
             'sampling_strategy': params['sampling_strategy'],
         }
         learner = Learner(learner_params)
