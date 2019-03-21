@@ -218,10 +218,6 @@ class ChoosePredicateMixin:
                 predicates_to_train.append(predicate)
         if not predicates_to_train:
             return None
-        elif len(predicates_to_train) == 1:
-            return predicates_to_train[0]
         else:
-            if len(self.predicates) == 1:
-                return self.predicates[0]
-            elif len(self.predicates) == 2:
-                return self.predicates[param % 2]
+            n = len(predicates_to_train)
+            return predicates_to_train[param % n]
