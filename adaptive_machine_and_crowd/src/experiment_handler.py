@@ -56,9 +56,18 @@ def run_experiment(params):
                     SAL = configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels)
                     policy.update_budget_al(params['size_init_train_data']*len(predicates)*crowd_votes_per_item_al)
                     SAL.screening_out_threshold = screening_out_threshold_machines
+                    i = -1
                     while policy.is_continue_al:
-                        # SAL.update_stat()  # uncomment if use predicate selection feature
-                        pr = SAL.select_predicate()
+                        i += 1
+                        SAL.update_stat()  # uncomment if use predicate selection feature
+                        if i < 20:
+                            pr = SAL.select_predicate()
+                        else:
+                            pr = SAL.select_predicate_stop(i)
+                        if pr == None:
+                            break
+
+                        # pr = SAL.select_predicate()
                         query_idx = SAL.query(pr)
                         if len(query_idx) == 0:
                             # exit the loop if we crowdsourced all the items
@@ -194,7 +203,7 @@ def configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels):
 
     params.update({'learners': learners})
     SAL = ScreeningActiveLearner(params)
-    # SAL.init_stat()  # initialize statistic for predicates, uncomment if use predicate selection feature
+    SAL.init_stat()  # initialize statistic for predicates, uncomment if use predicate selection feature
 
     return SAL
 

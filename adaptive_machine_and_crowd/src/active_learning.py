@@ -1,5 +1,6 @@
 import numpy as np
 from modAL.models import ActiveLearner
+from adaptive_machine_and_crowd.src.utils import ChoosePredicateMixin
 
 
 class ActiveLearner(ActiveLearner):
@@ -33,7 +34,7 @@ class Learner:
         )
 
 
-class ScreeningActiveLearner:
+class ScreeningActiveLearner(ChoosePredicateMixin):
 
     def __init__(self, params):
         self.n_instances_query = params['n_instances_query']
