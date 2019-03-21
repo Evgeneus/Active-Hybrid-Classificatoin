@@ -56,18 +56,19 @@ def run_experiment(params):
                     SAL, votes_num_init = configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels, crowd_votes)
                     policy.update_budget_al(votes_num_init)
                     SAL.screening_out_threshold = screening_out_threshold_machines
+                    i = -1
                     while policy.is_continue_al:
-                        # SAL.update_stat()  # uncomment if use adaptive policy
-                        # if (policy.B - policy.B_al_spent) <= items_num:
-                        #     break
-                        # if i < 20:
-                        #     pr = SAL.select_predicate(i)
-                        # else:
-                        #     pr = SAL.select_predicate_stop(i)
-                        #     print(pr)
-                        # if pr == None:
-                        #     break
-                        pr = SAL.select_predicate()
+                        i += 1
+                        SAL.update_stat()  # uncomment if use adaptive policy
+                        SAL.update_stat()  # uncomment if use predicate selection feature
+                        if i < 20:
+                            pr = SAL.select_predicate()
+                        else:
+                            pr = SAL.select_predicate_stop(i)
+                        print(pr)
+                        if pr == None:
+                            break
+
                         query_idx = SAL.query(pr)
                         if len(query_idx) == 0:
                             # exit the loop if we crowdsourced all the items
@@ -203,7 +204,7 @@ def configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels, c
     params.update({'learners': learners})
     SAL = ScreeningActiveLearner(params)
     #  uncomment if use adaptive policy
-    # SAL.init_stat()  # initialize statistic for predicates, uncomment if use predicate selection feature
+    SAL.init_stat()  # initialize statistic for predicates, uncomment if use predicate selection feature
 
     return SAL, votes_num
 

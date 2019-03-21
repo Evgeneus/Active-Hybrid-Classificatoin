@@ -58,11 +58,11 @@ if __name__ == '__main__':
 
     # Experiment parameters
     experiment_nums = 10
-    policy_switch_point = np.arange(0., 1.01, 0.1)
+    policy_switch_point = [0.5]
     budget_per_item = np.arange(1, 9, 1)  # number of votes per item we can spend per item on average
     crowd_votes_per_item_al = 3  # for Active Learning annotation
 
-    for sampling_strategy in [random_sampling, uncertainty_sampling]:
+    for sampling_strategy in [uncertainty_sampling]:
         print('{} is Running!'.format(sampling_strategy.__name__))
         params = {
             'dataset_file_name': dataset_file_name,
