@@ -84,7 +84,7 @@ if __name__ == '__main__':
 
     # Experiment parameters
     experiment_nums = 10
-    policy_switch_point = [0.5]
+    policy_switch_point = [0.55]  # must spent no more than 0,55 on AL
     budget_per_item = np.arange(1, 9, 1)  # number of votes per item we can spend per item on average
     crowd_votes_per_item_al = 3  # for Active Learning annotation
 
