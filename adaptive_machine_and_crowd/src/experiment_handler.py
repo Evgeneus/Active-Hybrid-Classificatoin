@@ -29,7 +29,7 @@ def run_experiment(params):
             for experiment_id in range(params['experiment_nums']):
                 policy = PointSwitchPolicy(B, switch_point)
 
-                X, y_screening, y_predicate, crowd_votes = load_data(params['dataset_file_name'], predicates)
+                X, y_screening, y_predicate, crowd_votes = load_data(params['dataset_file_name'], predicates, params['path_to_project'])
                 vectorizer = Vectorizer()
                 vectorizer.fit(X)
 
