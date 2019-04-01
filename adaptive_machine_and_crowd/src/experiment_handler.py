@@ -181,13 +181,16 @@ def configure_al_box(params, item_ids_helper, crowd_votes_counts, item_labels, c
     X_pool = np.delete(X_pool, train_idx, axis=0)
     votes_num = 0
     for pr in predicates:
-        n = params['crowd_votes_per_item_al']
-        y_predicate_train_init[pr], votes_num_pr = crowdsource_items_al(crowd_votes, crowd_votes_counts, train_idx, pr, n)
-        votes_num += votes_num_pr
+        y_predicate_train_init[pr] = y_predicate[pr][train_idx]
         y_predicate[pr] = np.delete(y_predicate[pr], train_idx)
         item_ids_helper[pr] = np.delete(item_ids_helper[pr], train_idx)
         for item_id, label in zip(train_idx, y_predicate_train_init[pr]):
+            if label == 1:
+                crowd_votes_counts[item_id][pr]['in'] = params['crowd_votes_per_item_al']
+            else:
+                crowd_votes_counts[item_id][pr]['out'] = params['crowd_votes_per_item_al']
             item_labels[item_id] = label
+            votes_num += params['crowd_votes_per_item_al']
 
     # dict of active learners per predicate
     learners = {}
