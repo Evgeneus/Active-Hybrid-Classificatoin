@@ -25,6 +25,14 @@ class ShortestMultiRun:
     def classify_items(self, item_ids, crowd_votes_counts, item_labels):
         unclassified_item_ids = []
         for item_id in item_ids:
+            # check if any votes are on item
+            s = 0
+            for v in crowd_votes_counts[item_id].values():
+                s += sum(v.values())
+            if s == 0:
+                unclassified_item_ids.append(item_id)
+                continue
+
             prob_item_in = 1.
             for predicate in self.predicates:
                 prob_predicate_in = self._prob_predicate_in(predicate, item_id, crowd_votes_counts)
