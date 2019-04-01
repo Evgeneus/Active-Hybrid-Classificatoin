@@ -108,6 +108,7 @@ class MetricsMixin:
 def load_data(file_name, predicates, path_to_project):
     path_dict = {
         '1k_amazon_reviews_crowdsourced_lemmatized.csv': path_to_project + 'data/amazon-sentiment-dataset/',
+        'crisis-lemmatized_witness_inf_damage.csv': path_to_project + 'data/crisis-dataset/',
     }
     path = path_dict[file_name]
     data = pd.read_csv(path + file_name)

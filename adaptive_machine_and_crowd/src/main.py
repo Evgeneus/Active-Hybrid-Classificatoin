@@ -29,8 +29,8 @@ import numpy as np
 '''
 
 if __name__ == '__main__':
-    # datasets = 'amazon', 'amazon_binary'
-    dataset = 'amazon'
+    # datasets = 'amazon', 'amazon_binary', 'crisis'
+    dataset = 'crisis'
     if dataset == 'amazon':
         # AMAZON DATASET
         predicates = ['is_negative', 'is_book']
@@ -43,6 +43,11 @@ if __name__ == '__main__':
         dataset_file_name = '1k_amazon_reviews_crowdsourced_lemmatized.csv'
         dataset_size = 1000
         crowd_acc = {predicates[0]: [0.93, 0.93]}
+    elif dataset == 'crisis':
+        predicates = ['eye_witness', 'informative', 'damage']
+        dataset_file_name = 'crisis-lemmatized_witness_inf_damage.csv'
+        dataset_size = 1943
+        crowd_acc = {predicates[0]: [0.87, 0.87], predicates[1]: [0.85, 0.85], predicates[2]: [0.90, 0.90]}
     else:
         exit(1)
 
