@@ -4,11 +4,11 @@ import numpy as np
 from sklearn.linear_model import SGDClassifier  # linear svm by default
 from sklearn.calibration import CalibratedClassifierCV
 
-from adaptive_machine_and_crowd.src.utils import get_init_training_data_idx, \
+from scopeAL_and_SMR.src.utils import get_init_training_data_idx, \
     load_data, Vectorizer, CrowdSimulator, MetricsMixin
-from adaptive_machine_and_crowd.src.active_learning import Learner, ScreeningActiveLearner
-from adaptive_machine_and_crowd.src.sm_run.shortest_multi_run import ShortestMultiRun
-from adaptive_machine_and_crowd.src.policy import PointSwitchPolicy
+from scopeAL_and_SMR.src.active_learning import Learner, ScreeningActiveLearner
+from scopeAL_and_SMR.src.sm_run.shortest_multi_run import ShortestMultiRun
+from scopeAL_and_SMR.src.policy import PointSwitchPolicy
 
 
 def run_experiment(params):
@@ -148,7 +148,7 @@ def run_experiment(params):
     file_name = params['dataset_file_name'][:-4] + '_experiment_nums_{}_ninstq_{}'.format(params['experiment_nums'], params['n_instances_query'])
     if len(predicates) == 1:
         file_name = 'binary_' + file_name
-    path = params['path_to_project'] + 'adaptive_machine_and_crowd/output/'
+    path = params['path_to_project'] + 'scopeAL_and_SMR/output/'
     if os.path.isfile(path + '{}.csv'.format(file_name)):
         df_prev = pd.read_csv(path + '{}.csv'.format(file_name))
         df_new = df_prev.append(df_to_print, ignore_index=True)

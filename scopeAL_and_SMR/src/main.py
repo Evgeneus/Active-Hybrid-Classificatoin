@@ -4,9 +4,9 @@ path_to_project = os.path.realpath('main.py')[:-27]  # TODO:
 sys.path.append(path_to_project)
 
 from modAL.uncertainty import uncertainty_sampling
-from adaptive_machine_and_crowd.src.utils import random_sampling, objective_aware_sampling
+from scopeAL_and_SMR.src.utils import random_sampling, objective_aware_sampling
 
-from adaptive_machine_and_crowd.src.experiment_handler import run_experiment
+from scopeAL_and_SMR.src.experiment_handler import run_experiment
 import numpy as np
 
 '''
