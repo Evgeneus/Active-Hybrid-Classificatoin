@@ -94,7 +94,7 @@ def run_experiment(params):
                     estimated_predicate_selectivity = {}
                     for pr in predicates:
                         estimated_predicate_accuracy[pr] = sum(crowd_acc[pr]) / 2
-                        estimated_predicate_selectivity[pr] = sum(y_predicate[pr]) / len(y_predicate[pr])
+                        estimated_predicate_selectivity[pr] = sum(item_predicate_gt[pr].values()) / len(item_predicate_gt[pr].values())
                     smr_params = {
                         'estimated_predicate_accuracy': estimated_predicate_accuracy,
                         'estimated_predicate_selectivity': estimated_predicate_selectivity,
