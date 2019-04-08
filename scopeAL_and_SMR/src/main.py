@@ -1,5 +1,5 @@
 import sys, os
-path_to_project = os.path.realpath('main.py')[:-27]  # TODO:
+path_to_project = os.path.realpath('main.py')[:-38]  # TODO:
 # path_to_project = '/home/evgeny.krivosheev/Active-Hybrid-Classificatoin_MultiPredicate/'
 sys.path.append(path_to_project)
 
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     experiment_nums = 10
     policy_switch_point = np.arange(0., 1.01, 0.1)
     budget_per_item = np.arange(1, 9, 1)  # number of votes per item we can spend per item on average
-    crowd_votes_per_item_al = 3  # for Active Learning annotation
+    crowd_votes_per_pred_al = 3  # for Active Learning annotation
 
     for sampling_strategy in [random_sampling, uncertainty_sampling]:
         print('{} is Running!'.format(sampling_strategy.__name__))
@@ -100,7 +100,7 @@ if __name__ == '__main__':
             'predicates': predicates,
             'sampling_strategy': sampling_strategy,
             'crowd_acc': crowd_acc,
-            'crowd_votes_per_item_al': crowd_votes_per_item_al,
+            'crowd_votes_per_pred_al': crowd_votes_per_pred_al,
             'policy_switch_point': policy_switch_point,
             'budget_per_item': budget_per_item,
             'stop_score': stop_score,

@@ -40,33 +40,22 @@ class ScreeningActiveLearner:
         self.screening_out_threshold = params['screening_out_threshold']
         self.lr = params['lr']
         self.beta = params['beta']
-        self.learners = params['learners']
-        self.predicates = list(self.learners.keys())
-        self.predicate_queue = list(range(len(self.predicates)))
+        self.learner = params['learner']
 
-    def select_predicate(self):
-        pred_id = self.predicate_queue.pop(0)
-        self.predicate_queue.append(pred_id)
-
-        return self.predicates[pred_id]
-
-    def query(self, predicate):
-        l = self.learners[predicate]
+    def query(self):
+        l = self.learner
         # all learners except the current one
-        learners_ = {l_: self.learners[l_] for l_ in self.learners if l_ not in [predicate]}
         if self.n_instances_query > len(l.y_pool):
             if len(l.y_pool) == 0:
                 return []
             n_instances = len(l.y_pool)
         else:
             n_instances = self.n_instances_query
-        query_idx, _ = l.learner.query(l.X_pool,
-                                       n_instances=n_instances,
-                                       learners_=learners_)
+        query_idx, _ = l.learner.query(l.X_pool, n_instances=n_instances)
         return query_idx
 
-    def teach(self, predicate, query_idx, y_crowdsourced):
-        l = self.learners[predicate]
+    def teach(self, query_idx, y_crowdsourced):
+        l = self.learner
         l.learner.teach(l.X_pool[query_idx], y_crowdsourced)
         # remove queried instance from pool
         l.X_pool = np.delete(l.X_pool, query_idx, axis=0)
@@ -74,8 +63,7 @@ class ScreeningActiveLearner:
 
     def predict_proba(self, X):
         proba_in = np.ones(X.shape[0])
-        for l in self.learners.values():
-            proba_in *= l.learner.predict_proba(X)[:, 1]
+        proba_in *= self.learner.predict_proba(X)[:, 1]
         proba = np.stack((1-proba_in, proba_in), axis=1)
 
         return np.array(proba)

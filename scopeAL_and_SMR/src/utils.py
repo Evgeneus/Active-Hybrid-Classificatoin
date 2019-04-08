@@ -48,6 +48,36 @@ class CrowdSimulator:
             crodsourced_items.append(item_label)
         return crodsourced_items
 
+    @staticmethod
+    def crowdsource_items_scope_mode(item_ids, gt_items, predicates, crowd_acc, n, crowd_votes_counts):
+        '''
+        :param gt_items: list of ground truth values fo items to crowdsource
+        :param crowd_acc: crowd accuracy range on predicate given
+        :param n: n crowd votes per predicate
+        :param predicate: name of predicates
+        :return: aggregated crwodsourced label on items
+        '''
+        crodsourced_items = []
+        for item_ind, item_id in enumerate(item_ids):
+            item_pred_val = {}
+            for pr in predicates:
+                gt = gt_items[pr][item_ind]
+                in_votes, out_votes = 0, 0
+                for _ in range(n):
+                    worker_acc = random.uniform(crowd_acc[pr][0], crowd_acc[pr][1])
+                    worker_vote = np.random.binomial(1, worker_acc if gt == 1 else 1 - worker_acc)
+                    if worker_vote == 1:
+                        in_votes += 1
+                    else:
+                        out_votes += 1
+                pred_label = 1 if in_votes >= out_votes else 0
+                item_pred_val[pr] = pred_label
+                crowd_votes_counts[item_id][pr]['in'] += in_votes
+                crowd_votes_counts[item_id][pr]['out'] += out_votes
+            item_label = 0 if 0 in item_pred_val.values() else 1
+            crodsourced_items.append(item_label)
+        return crodsourced_items
+
 
 # screening metrics, aimed to obtain high recall
 class MetricsMixin:
