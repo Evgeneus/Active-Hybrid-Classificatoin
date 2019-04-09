@@ -83,8 +83,10 @@ if __name__ == '__main__':
 
     # Experiment parameters
     experiment_nums = 10
-    policy_switch_point = np.arange(0., 1.01, 0.1)
-    budget_per_item = np.arange(1, 9, 1)  # number of votes per item we can spend per item on average
+    # policy_switch_point = np.arange(0., 1.01, 0.1)
+    policy_switch_point = [0., 0.1, 0.3, 0.5, 0.7, 1.]
+    # budget_per_item = np.arange(1, 9, 1)  # number of votes per item we can spend per item on average
+    budget_per_item = [3, 5, 7, 9]  # number of votes per item we can spend per item on average
     crowd_votes_per_pred_al = 3  # for Active Learning annotation
 
     for sampling_strategy in [random_sampling, uncertainty_sampling]:
