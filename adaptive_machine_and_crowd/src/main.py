@@ -32,7 +32,7 @@ import numpy as np
 
 if __name__ == '__main__':
     # datasets = 'amazon', 'ohusmed', 'slr', 'amazon_binary', 'ohusmed_binary', 'slr_binary'
-    dataset = 'amazon'
+    dataset = 'crisis_binary'
     if dataset == 'amazon':
         # AMAZON DATASET
         predicates = ['is_negative', 'is_book']
@@ -69,6 +69,18 @@ if __name__ == '__main__':
         predicates = ['Y']
         dataset_size = 34387
         crowd_acc = {predicates[0]: [0.6, 1.]}
+    elif dataset == 'crisis':
+        # CRISIS DATASET
+        dataset_file_name = 'crisis-lemmatized_witness_inf.csv'
+        predicates = ['eye_witness', 'informative']
+        dataset_size = 1943
+        crowd_acc = {predicates[0]: [0.87, 0.87], predicates[1]: [0.85, 0.85]}
+    elif dataset == 'crisis_binary':
+        # CRISIS DATASET
+        dataset_file_name = 'crisis-lemmatized_witness_inf.csv'
+        predicates = ['Y']
+        dataset_size = 1943
+        crowd_acc = {predicates[0]: [0.927, 0.927]}
     else:
         exit(1)
 

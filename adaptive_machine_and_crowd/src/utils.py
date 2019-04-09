@@ -93,7 +93,8 @@ def load_data(file_name, predicates, path_to_project):
         'ohsumed_C04_C12_1grams.csv': path_to_project + 'data/ohsumed_data/',
         'ohsumed_C10_C23_1grams.csv': path_to_project + '/data/ohsumed_data/',
         'ohsumed_C14_C23_1grams.csv': path_to_project + 'data/ohsumed_data/',
-        'loneliness-dataset-2018.csv': path_to_project + 'data/loneliness-dataset-2018/'
+        'loneliness-dataset-2018.csv': path_to_project + 'data/loneliness-dataset-2018/',
+        'crisis-lemmatized_witness_inf.csv': path_to_project + 'data/crisis-dataset/'
     }
     path = path_dict[file_name]
     data = pd.read_csv(path + file_name)
