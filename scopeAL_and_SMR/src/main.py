@@ -1,5 +1,5 @@
 import sys, os
-path_to_project = os.path.realpath('main.py')[:-38]  # TODO:
+path_to_project = os.path.realpath('main.py')[:-27]  # TODO:
 # path_to_project = '/home/evgeny.krivosheev/Active-Hybrid-Classificatoin_MultiPredicate/'
 sys.path.append(path_to_project)
 
