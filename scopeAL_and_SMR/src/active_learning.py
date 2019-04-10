@@ -1,5 +1,6 @@
 import numpy as np
 from modAL.models import ActiveLearner
+from sklearn.utils import shuffle
 
 
 class ActiveLearner(ActiveLearner):
@@ -56,6 +57,7 @@ class ScreeningActiveLearner:
 
     def teach(self, query_idx, y_crowdsourced):
         l = self.learner
+        l.learner.X_training, l.learner.y_training = shuffle(l.learner.X_training, l.learner.y_training)
         l.learner.teach(l.X_pool[query_idx], y_crowdsourced)
         # remove queried instance from pool
         l.X_pool = np.delete(l.X_pool, query_idx, axis=0)
