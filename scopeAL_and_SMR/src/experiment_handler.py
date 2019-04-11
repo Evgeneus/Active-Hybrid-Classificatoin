@@ -83,7 +83,7 @@ def run_experiment(params):
                     for item_id in range(items_num):
                         prior_prob[item_id] = {}
                         for pr in predicates:
-                            prediction = SAL.learner.learner.predict_proba(vectorizer.transform([X[item_id]]))[0]
+                            prediction = SAL.predict_proba(vectorizer.transform([X[item_id]]))[0]
                             prior_prob[item_id][pr] = {'in': prediction[1], 'out': prediction[0]}
                     print('experiment_id {}'.format(experiment_id), end=', ')
 
@@ -128,7 +128,7 @@ def run_experiment(params):
 
                 # if budget is over and we did the AL part then classify the rest of the items via machines
                 if unclassified_item_ids.any() and switch_point != 0:
-                    predicted = SAL.learner.learner.predict(vectorizer.transform(X[unclassified_item_ids]))
+                    predicted = SAL.predict(vectorizer.transform(X[unclassified_item_ids]))
                     item_labels.update(dict(zip(unclassified_item_ids, predicted)))
 
                 # compute metrics and pint results to csv

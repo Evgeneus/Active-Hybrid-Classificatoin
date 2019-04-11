@@ -65,7 +65,7 @@ class ScreeningActiveLearner:
 
     def predict_proba(self, X):
         proba_in = np.ones(X.shape[0])
-        proba_in *= self.learner.predict_proba(X)[:, 1]
+        proba_in *= self.learner.learner.predict_proba(X)[:, 1]
         proba = np.stack((1-proba_in, proba_in), axis=1)
 
         return np.array(proba)
