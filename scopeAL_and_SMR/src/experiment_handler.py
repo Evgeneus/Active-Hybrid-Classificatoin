@@ -2,6 +2,9 @@ import os
 import random
 import pandas as pd
 import numpy as np
+from pylab import plot, xlim, ylim, show, xlabel, ylabel, grid, title
+import matplotlib.pyplot as plt
+from numpy import linspace, loadtxt, ones, convolve
 from sklearn.linear_model import SGDClassifier  # linear svm by default
 from sklearn.calibration import CalibratedClassifierCV
 
@@ -10,6 +13,11 @@ from scopeAL_and_SMR.src.utils import get_init_training_data_idx, \
 from scopeAL_and_SMR.src.active_learning import Learner, ScreeningActiveLearner
 from scopeAL_and_SMR.src.sm_run.shortest_multi_run import ShortestMultiRun
 from scopeAL_and_SMR.src.policy import PointSwitchPolicy
+
+
+def movingaverage(interval, window_size=5):
+    window = np.ones(int(window_size))/float(window_size)
+    return np.convolve(interval, window, 'same')
 
 
 def run_experiment(params):
@@ -125,13 +133,38 @@ def run_experiment(params):
                             policy.update_budget_crowd(baseround_item_num * crowd_votes_per_pred_al)
                     unclassified_item_ids = SMR.classify_items(unclassified_item_ids, crowd_votes_counts, item_labels)
 
+                    avg_cost_per_item = []
+                    unclassified_items_num = len(unclassified_item_ids)
                     while policy.is_continue_crowd and len(unclassified_item_ids) > 0:
                         # Check money
                         if (policy.B_crowd - policy.B_crowd_spent) < len(unclassified_item_ids):
                             unclassified_item_ids = unclassified_item_ids[:(policy.B_crowd - policy.B_crowd_spent)]
                         unclassified_item_ids, budget_round = SMR.do_round(crowd_votes_counts, unclassified_item_ids, item_labels)
                         policy.update_budget_crowd(budget_round)
+
+                        if unclassified_items_num - len(unclassified_item_ids) > 0:
+                            avg_cost_per_item.append(budget_round / (unclassified_items_num - len(unclassified_item_ids)))
+                            unclassified_items_num = len(unclassified_item_ids)
+
                     # print('Crowd-Box finished')
+
+                # plot Moving AVG
+                y = np.array(avg_cost_per_item)
+                x = np.arange(len(y))
+                plot(x, y, "k.")
+                y_av = movingaverage(y, 10)
+                plot(x, y_av, "r")
+                xlim(0, len(x))
+                ylim(0, 7)
+                xlabel("Iteration")
+                ylabel("Average Cost per Item")
+                title("Amazon reviews 5000 items: Scope classification\n"
+                      "CrowdAcc:{}, avg_budget_per_item: {},\n %of difficult items: {},"
+                      " difficulty:{} from accuracy, %to AL:{}".format(crowd_acc['Y'],
+                       budget_per_item,  num_item_diff, -0.2, switch_point))
+                grid(True)
+                show()
+
 
                 # if budget is over and we did the AL part then classify the rest of the items via machines
                 if len(unclassified_item_ids) > 0 and switch_point != 0:

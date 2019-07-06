@@ -36,7 +36,6 @@ class ShortestMultiRun:
                 return [], budget_round
             budget_round += len(item_ids_tocrowd)
 
-        print(len(unclassified_item_ids))
         return unclassified_item_ids, budget_round
 
     def classify_items(self, item_ids, crowd_votes_counts, item_labels):
