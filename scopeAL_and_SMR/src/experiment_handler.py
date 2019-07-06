@@ -1,4 +1,5 @@
 import os
+import random
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import SGDClassifier  # linear svm by default
@@ -95,6 +96,10 @@ def run_experiment(params):
                     for pr in predicates:
                         estimated_predicate_accuracy[pr] = sum(crowd_acc[pr]) / 2
                         estimated_predicate_selectivity[pr] = sum(item_predicate_gt[pr].values()) / len(item_predicate_gt[pr].values())
+                    unclassified_item_ids = np.arange(items_num)
+                    num_item_diff = 0.3
+                    difficult_item_ids = set(random.sample(list(unclassified_item_ids), int(items_num * num_item_diff)))
+
                     smr_params = {
                         'estimated_predicate_accuracy': estimated_predicate_accuracy,
                         'estimated_predicate_selectivity': estimated_predicate_selectivity,
@@ -103,10 +108,12 @@ def run_experiment(params):
                         'clf_threshold': params['screening_out_threshold'],
                         'stop_score': params['stop_score'],
                         'crowd_acc': crowd_acc,
-                        'prior_prob': prior_prob
+                        'prior_prob': prior_prob,
+                        'difficult_item_ids': difficult_item_ids,
+                        'crowd_votes_item_avg': crowd_votes_per_pred_al,
+                        'items_round': params['n_instances_query']
                     }
                     SMR = ShortestMultiRun(smr_params)
-                    unclassified_item_ids = np.arange(items_num)
                     # crowdsource items for SM-Run base-round in case poor SM-Run used
                     if switch_point == 0:
                         baseround_item_num = 50  # since 50 used in WWW2018 Krivosheev et.al
@@ -118,7 +125,7 @@ def run_experiment(params):
                             policy.update_budget_crowd(baseround_item_num * crowd_votes_per_pred_al)
                     unclassified_item_ids = SMR.classify_items(unclassified_item_ids, crowd_votes_counts, item_labels)
 
-                    while policy.is_continue_crowd and unclassified_item_ids.any():
+                    while policy.is_continue_crowd and len(unclassified_item_ids) > 0:
                         # Check money
                         if (policy.B_crowd - policy.B_crowd_spent) < len(unclassified_item_ids):
                             unclassified_item_ids = unclassified_item_ids[:(policy.B_crowd - policy.B_crowd_spent)]
@@ -127,7 +134,7 @@ def run_experiment(params):
                     # print('Crowd-Box finished')
 
                 # if budget is over and we did the AL part then classify the rest of the items via machines
-                if unclassified_item_ids.any() and switch_point != 0:
+                if len(unclassified_item_ids) > 0 and switch_point != 0:
                     predicted = SAL.predict(vectorizer.transform(X[unclassified_item_ids]))
                     item_labels.update(dict(zip(unclassified_item_ids, predicted)))
 

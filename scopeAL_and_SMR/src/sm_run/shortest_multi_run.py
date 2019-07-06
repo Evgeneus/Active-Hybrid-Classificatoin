@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.special import binom
 import random
+from heapq import nsmallest
 
 
 class ShortestMultiRun:
@@ -15,13 +16,27 @@ class ShortestMultiRun:
         self.item_predicate_gt = params['item_predicate_gt']
         self.prior_prob = params.get('prior_prob', None)
         self.max_votes_per_item = 20
+        self.difficult_item_ids = params['difficult_item_ids']
+        self.diff = 0.2
+        self.crowd_votes_item_avg = params['crowd_votes_item_avg']
+        self.items_round = params['items_round']
 
-    def do_round(self, crowd_votes_counts, item_ids, item_labels):
-        predicate_assigned = self.assign_predicates(item_ids, crowd_votes_counts)
-        self.crowdsource_items(crowd_votes_counts, predicate_assigned)
-        unclassified_item_ids = self.classify_items(predicate_assigned.keys(), crowd_votes_counts, item_labels)
-        budget_round = len(predicate_assigned)
+    def do_round(self, crowd_votes_counts, unclassified_item_ids, item_labels):
+        budget_round = 0
+        for _ in range(self.crowd_votes_item_avg):
+            predicate_assigned, item_score = self.assign_predicates(unclassified_item_ids, crowd_votes_counts)
+            item_ids_tocrowd = nsmallest(self.items_round, item_score, key=item_score.get)
+            if len(item_ids_tocrowd) > 0:
+                unclassified_item_ids = set(predicate_assigned.keys()) - set(item_ids_tocrowd)
+                predicate_assigned_round = {id_: predicate_assigned[id_] for id_ in item_ids_tocrowd}
+                self.crowdsource_items(crowd_votes_counts, predicate_assigned_round)
+                unclassified_item_ids |= set(self.classify_items(predicate_assigned_round.keys(), crowd_votes_counts, item_labels))
+                unclassified_item_ids = list(unclassified_item_ids)
+            else:
+                return [], budget_round
+            budget_round += len(item_ids_tocrowd)
 
+        print(len(unclassified_item_ids))
         return unclassified_item_ids, budget_round
 
     def classify_items(self, item_ids, crowd_votes_counts, item_labels):
@@ -44,6 +59,7 @@ class ShortestMultiRun:
 
     def assign_predicates(self, item_ids, crowd_votes_counts):
         predicate_assigned = {}
+        item_score = {}
         for item_id in item_ids:
             crowdsourced_votes_num = 0
             classify_score = {}
@@ -84,8 +100,9 @@ class ShortestMultiRun:
             predicate_best_score = min(classify_score, key=classify_score.get)
             if classify_score[predicate_best_score] < self.stop_score and crowdsourced_votes_num < self.max_votes_per_item:
                 predicate_assigned[item_id] = predicate_best_score
+                item_score[item_id] = classify_score[predicate_best_score]
 
-        return predicate_assigned
+        return predicate_assigned, item_score
 
     def crowdsource_items(self, crowd_votes_counts, predicate_assigned):
         for item_id in predicate_assigned.keys():
@@ -93,6 +110,9 @@ class ShortestMultiRun:
             crowd_acc_range = self.crowd_acc_range[predicate]
             worker_acc = random.uniform(crowd_acc_range[0], crowd_acc_range[1])
             gt = self.item_predicate_gt[predicate][item_id]
+            # reduce worker_acc if item is a difficult one
+            if item_id in self.difficult_item_ids:
+                worker_acc -= self.diff
             worker_vote = np.random.binomial(1, worker_acc if gt == 1 else 1 - worker_acc)
             if worker_vote == 1:
                 crowd_votes_counts[item_id][predicate]['in'] += 1

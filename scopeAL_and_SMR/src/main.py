@@ -31,7 +31,7 @@ import numpy as np
 
 if __name__ == '__main__':
     # datasets = 'amazon', 'ohusmed', 'slr', 'amazon_binary', 'ohusmed_binary', 'slr_binary'
-    dataset = 'amazon'
+    dataset = 'amazon_binary'
     if dataset == 'amazon':
         # AMAZON DATASET
         predicates = ['is_negative', 'is_book']
@@ -55,7 +55,7 @@ if __name__ == '__main__':
         predicates = ['Y']
         dataset_file_name = '5000_reviews_lemmatized.csv'
         dataset_size = 5000
-        crowd_acc = {predicates[0]: [0.94, 0.94]}
+        crowd_acc = {predicates[0]: [0.7, 0.9]}
     elif dataset == 'slr_binary':
         # LONELINESS BINARY SLR DATASET
         predicates = ['Y']
